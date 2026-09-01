@@ -148,7 +148,7 @@
       <div class="s" id="hPaySub"></div>
     </div>
     <div class="col get">
-      <div class="k">この卓のバック</div>
+      <div class="k">この卓の取り分</div>
       <div class="v"><span class="yen">¥</span><span id="hGet">0</span></div>
       <div class="s" id="hGetSub"></div>
     </div>
@@ -224,7 +224,7 @@
     <section>
       <h2>璃子ちゃん側の内訳<span class="note">卓ごとのバック</span></h2>
       <div class="card bd" id="bdGet"></div>
-      <div class="msg" style="margin-top:10px">時給・厚生費・源泉は1日単位でかかるものなので、ここには入れず日計で反映しています。</div>
+      <div class="msg" style="margin-top:10px">時給分は、この卓にいた時間ぶんの目安です。待機時間の時給、厚生費、送り代、源泉は1日単位でかかるものなので、ここには入れず日計で反映しています。</div>
     </section>
 
     <section>
@@ -474,6 +474,7 @@ async function loadMonth(m){
 /* ══════ 計算 ══════ */
 function calcTable(c,st){
   const f=FLOORS[c.floor],units=1+c.ext*0.5,svc=f.svc+(c.late?0.10:0);
+  const stayMin=50+c.ext*25,wageShare=st.hourly*stayMin/60;
   const setFee=8000*c.guests,extFee=4000*c.guests*c.ext;
   const honFee=3000*c.honshimei*units,jonaiFee=3000*c.jonai*units,dohanFee=5000*c.dohan;
   const roomFee=f.room?(20000+10000*c.ext):0,single=(f.room&&c.guests===1)?5000:0;
@@ -502,9 +503,10 @@ function calcTable(c,st){
   CATS.forEach(k=>{const src=(share===-1)?mineNet[k]:catNet[k]*share;if(src<=0)return;
     const b=src*mul*(st.bk[k]/100);orderBack+=b;backLines.push([MENU[k].label,src,st.bk[k],b]);});
 
+  const backTotal=shimeiBack+dohanBack+orderBack;
   return {f,units,setFee,extFee,honFee,jonaiFee,dohanFee,roomFee,single,order,sub,svcFee,total,
     shimeiBack,shimeiLabel,shimeiPct,dohanBack,orderBack,backLines,
-    backTotal:shimeiBack+dohanBack+orderBack,shareNote};
+    backTotal,shareNote,stayMin,wageShare,take:backTotal+wageShare};
 }
 function allTables(inc){return inc===false?TBLS:TBLS.concat(TEMP.filter(t=>t.work_date.slice(0,7)===curMonth));}
 function dayList(inc){const m={};allTables(inc).forEach(t=>{(m[t.work_date]=m[t.work_date]||[]).push(t);});
@@ -529,19 +531,28 @@ function calcDay(d,tl){
   const stayMin=tl.reduce((s,t)=>s+tableMin(t),0);
   const rate=(rawMin&&stayMin)?Math.min(100,Math.round(stayMin/rawMin*100)):null;
   const wage=S.hourly*hours,gross=back+wage;
+  /* 時給のうち卓についていた時間ぶん。実働時間を超えないよう頭打ちにする */
+  const stayWageRaw=S.hourly*stayMin/60;
+  const stayWage=Math.min(stayWageRaw,wage),idleWage=wage-stayWage;
+  const wageF=stayWageRaw>0?stayWage/stayWageRaw:0;
+  const tableTake=t=>t.back+S.hourly*tableMin(t)/60*wageF;
+  const takeTotal=tl.reduce((s,t)=>s+tableTake(t),0);
   const gensen=S.gensen?gross*0.1021:0;
   const kousei=tl.length?S.kousei:0;
   const okuriFee=okuri?S.okuri:0;
   const fixed=kousei+okuriFee;
   return {back,pay,hours,okuri,wage,gross,gensen,kousei,okuriFee,fixed,
-    inT,outT,rawMin,auto,stayMin,rate,take:Math.max(0,gross-gensen-fixed)};
+    inT,outT,rawMin,auto,stayMin,rate,stayWage,idleWage,tableTake,takeTotal,
+    take:Math.max(0,gross-gensen-fixed)};
 }
 function calcMonth(inc){
-  const m=dayList(inc);let take=0,pay=0,tables=0,days=0,hours=0,wage=0,back=0,stayMin=0;
+  const m=dayList(inc);let take=0,pay=0,tables=0,days=0,hours=0,wage=0,back=0,stayMin=0,
+    stayWage=0,takeTotal=0;
   Object.keys(m).forEach(d=>{const r=calcDay(d,m[d]);take+=r.take;pay+=r.pay;tables+=m[d].length;
     hours+=r.hours;wage+=r.wage;back+=r.back;stayMin+=r.stayMin;
+    stayWage+=r.stayWage;takeTotal+=r.takeTotal;
     if(m[d].length||(DAYS[d]&&(DAYS[d].hours||DAYS[d].inT)))days++;});
-  return {take,pay,tables,days,hours,wage,back,stayMin};
+  return {take,pay,tables,days,hours,wage,back,stayMin,stayWage,takeTotal};
 }
 
 /* ══════ 描画 ══════ */
@@ -549,8 +560,8 @@ function render(){
   const r=calcTable(C,S);
   $("hPay").textContent=yen(r.total);
   $("hPaySub").textContent=`${r.f.name}・${C.guests}名・${50+C.ext*25}分`;
-  $("hGet").textContent=yen(r.backTotal);
-  $("hGetSub").textContent=r.total>0?`支払いの ${(r.backTotal/r.total*100).toFixed(1)}%`:"";
+  $("hGet").textContent=yen(r.take);
+  $("hGetSub").textContent=`バック ¥${yen(r.backTotal)} ＋ 時給 ¥${yen(r.wageShare)}`;
 
   const rt={hon:"卓の飲食売上のバックは本指名についてもらえます。",
     jonai:"場内指名の場合、飲食売上のバックは本指名の子につくのが基本です。ルールは璃子シートで変えられます。",
@@ -583,8 +594,10 @@ function render(){
   $("bdGet").innerHTML=`<div class="r dim"><span>飲食売上の帰属</span><span style="font-family:var(--sans);font-size:12px">${r.shareNote}</span></div>`
     +(g.length?g.map(x=>`<div class="r"><span>${x[0]}</span><span>¥${yen(x[1])}</span></div>`).join("")
       :`<div class="r dim"><span>この卓のバックはありません</span><span>¥0</span></div>`)
-    +`<div class="r total-j sum"><span>この卓のバック</span><span>¥${yen(r.backTotal)}</span></div>`
-    +`<div class="r dim"><span>時間あたり（滞在 ${50+C.ext*25}分 で換算）</span><span>¥${yen(r.backTotal/((50+C.ext*25)/60))}</span></div>`;
+    +`<div class="r sum"><span>バック小計</span><span>¥${yen(r.backTotal)}</span></div>`
+    +`<div class="r"><span>時給分 ¥${yen(S.hourly)} × ${hhmm(r.stayMin)}</span><span>¥${yen(r.wageShare)}</span></div>`
+    +`<div class="r total-j"><span>この卓の取り分</span><span>¥${yen(r.take)}</span></div>`
+    +`<div class="r dim"><span>時間あたり（滞在 ${hhmm(r.stayMin)} で換算）</span><span>¥${yen(r.take/(r.stayMin/60))}</span></div>`;
 }
 
 function renderMonthBar(){
@@ -603,8 +616,10 @@ function renderDays(target,titleId,tk,py,ct,editable){
   const sum=$(editable?"mSum":"aSum");
   if(sum) sum.innerHTML=`<div class="r"><span>勤務時間の合計</span><span>${m.hours}時間</span></div>`
     +`<div class="r"><span>うち卓についた時間</span><span>${m.stayMin?hhmm(m.stayMin):"—"}</span></div>`
-    +`<div class="r"><span>時給分</span><span>¥${yen(m.wage)}</span></div>`
-    +`<div class="r"><span>卓のバック分</span><span>¥${yen(m.back)}</span></div>`;
+    +`<div class="r"><span>卓の取り分合計</span><span>¥${yen(m.takeTotal)}</span></div>`
+    +`<div class="r dim"><span>うち バック</span><span>¥${yen(m.back)}</span></div>`
+    +`<div class="r dim"><span>うち 時給（卓についていた分）</span><span>¥${yen(m.stayWage)}</span></div>`
+    +`<div class="r"><span>待機などの時給</span><span>¥${yen(m.wage-m.stayWage)}</span></div>`;
   if(editable) $("mNote").innerHTML=`時給 ¥${yen(S.hourly)} × その日の勤務時間。厚生費 ¥${yen(S.kousei)} は卓についた日に1回、送り代 ¥${yen(S.okuri)} は「送りを使った」にチェックした日だけ引きます。源泉10.21%は${S.gensen?"":"（今はオフ）"}その日の支給額にかけています。`;
 
   const map=dayList(editable), ds=Object.keys(map).sort().reverse();
@@ -615,9 +630,9 @@ function renderDays(target,titleId,tk,py,ct,editable){
       <div class="dhead" data-day="${target}-${d}"><div class="d">${dd.getDate()}<span style="font-size:11px;color:var(--muted)">（${wd}）</span></div>
       <div class="c">${tl.length}卓 ・ 支払 ¥${yen(r.pay)}</div><div class="a">¥${yen(r.take)}</div></div>
       <div class="dbody hide" id="db-${target}-${d}">
-        ${tl.map(t=>{const mn=tableMin(t),ph=mn?t.back/(mn/60):0;
-          return `<div class="tline"><div class="n">${t.label}${t.temp?' <span class="tag" style="cursor:default">保存なし</span>':""}<small>${t.meta}</small>${mn?`<small>滞在 ${hhmm(mn)} ・ 時間あたり ¥${yen(ph)}</small>`:""}</div>
-          <div class="p">${t.pay?"¥"+yen(t.pay):""}</div><div class="b">¥${yen(t.back)}</div>
+        ${tl.map(t=>{const mn=tableMin(t),tk=r.tableTake(t),wg=tk-t.back;
+          return `<div class="tline"><div class="n">${t.label}${t.temp?' <span class="tag" style="cursor:default">保存なし</span>':""}<small>${t.meta}</small>${mn?`<small>滞在 ${hhmm(mn)}${wg?` ・ バック ¥${yen(t.back)} ＋ 時給 ¥${yen(wg)}`:""} ・ 時間あたり ¥${yen(tk/(mn/60))}</small>`:""}</div>
+          <div class="p">${t.pay?"¥"+yen(t.pay):""}</div><div class="b">¥${yen(tk)}</div>
           ${editable?`<button class="x" data-rm="${t.id}"${t.temp?' data-temp="1"':""}>×</button>`:""}</div>`;}).join("")
           ||'<div style="color:var(--muted);font-size:12px;padding:6px 0">卓の記録なし</div>'}
         <div class="row" style="border-top:1px solid var(--line);margin-top:8px">
@@ -637,8 +652,12 @@ function renderDays(target,titleId,tk,py,ct,editable){
           ${editable?`<label class="chk" style="flex:1;padding:0"><input type="checkbox" data-okuri="${d}" ${r.okuri?"checked":""}><span>送りを使った <small>終電で上がった日は外す</small></span></label>`
             :`<div class="lab">送り</div><span style="font-family:var(--sans);font-size:13px;color:var(--muted)">${r.okuri?"使った":"なし"}</span>`}</div>
         <div class="bd" style="margin-top:6px">
-          <div class="r"><span>卓のバック合計</span><span>¥${yen(r.back)}</span></div>
-          ${r.wage?`<div class="r"><span>時給分 ¥${yen(S.hourly)} × ${r.hours}時間</span><span>¥${yen(r.wage)}</span></div>`:""}
+          ${r.stayMin
+            ?`<div class="r"><span>卓の取り分合計</span><span>¥${yen(r.takeTotal)}</span></div>
+              <div class="r dim"><span>うち バック</span><span>¥${yen(r.back)}</span></div>
+              ${r.stayWage?`<div class="r dim"><span>うち 時給（卓 ${hhmm(r.stayMin)}）</span><span>¥${yen(r.stayWage)}</span></div>`:""}`
+            :(r.back?`<div class="r"><span>卓のバック合計</span><span>¥${yen(r.back)}</span></div>`:"")}
+          ${r.idleWage?`<div class="r"><span>${r.stayWage?"待機などの時給":"時給分"}（${hhmm(Math.round(r.idleWage/S.hourly*60))}）</span><span>¥${yen(r.idleWage)}</span></div>`:""}
           ${r.kousei?`<div class="r dim"><span>厚生費</span><span>−¥${yen(r.kousei)}</span></div>`:""}
           ${r.okuriFee?`<div class="r dim"><span>送り代</span><span>−¥${yen(r.okuriFee)}</span></div>`:""}
           ${r.gensen?`<div class="r dim"><span>源泉徴収 10.21%</span><span>−¥${yen(r.gensen)}</span></div>`:""}
