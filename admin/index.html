@@ -159,7 +159,7 @@ async function load(m){
       const ts=tbls.filter(t=>t.cast_id===c.id);
       const S=st?statusFromRow(st):{hourly:3500,bkHon:50,bkJonai:50,bkDohan:50,
         bk:{cast:50,shot:30,champ:20,wine:10,bottle:10,food:0,other:0},
-        base:"net",attr:"hon",kousei:0,okuri:0,gensen:true};
+        base:"net",attr:"hon",kousei:0,okuri:0,gensen:true,wageFrom:WAGE_FROM,wageTo:WAGE_TO};
       const map=groupByDay(ts,recs);
       BY[c.id]={cast:c,S,recs,tables:ts,map,month:calcMonth(map,recs,S),
         edits:edits.filter(e=>e.cast_id===c.id)};
@@ -212,7 +212,8 @@ function renderDetail(id){
           ||'<div style="color:var(--muted);font-size:12px;padding:6px 0">卓の記録なし</div>'}
         <div class="bd" style="margin-top:8px;border-top:1px solid var(--line);padding-top:8px">
           <div class="r dim"><span>出勤・退勤</span><span style="font-family:var(--sans);font-size:13px">${r.inT&&r.outT?`${r.inT} → ${r.outT}`:"—"}</span></div>
-          <div class="r dim"><span>実働時間</span><span>${r.hours}時間</span></div>
+          ${r.rawMin?`<div class="r dim"><span>拘束時間</span><span>${hhmm(r.rawMin)}</span></div>`:""}
+          <div class="r dim"><span>実働時間<span style="font-family:var(--sans);font-size:11px;color:var(--muted)">（${S.wageFrom}〜${S.wageTo}）</span></span><span>${r.hours}時間</span></div>
           <div class="r dim"><span>送り</span><span style="font-family:var(--sans);font-size:13px">${r.okuri?"使った":"なし"}</span></div>
           ${r.stayMin?`<div class="r"><span>卓の取り分合計</span><span>¥${yen(r.takeTotal)}</span></div>`
             :(r.back?`<div class="r"><span>卓のバック合計</span><span>¥${yen(r.back)}</span></div>`:"")}
@@ -224,7 +225,7 @@ function renderDetail(id){
         </div></div></div>`;}).join("")
     :'<div class="empty">この月の記録はまだありません</div>';
 
-  const L=[["時給",`¥${yen(S.hourly)}`],["本指名バック",S.bkHon+"%"],["場内指名バック",S.bkJonai+"%"],
+  const L=[["時給",`¥${yen(S.hourly)}`],["時給の対象時間",`${S.wageFrom} 〜 ${S.wageTo}`],["本指名バック",S.bkHon+"%"],["場内指名バック",S.bkJonai+"%"],
     ["同伴バック",S.bkDohan+"%"],["キャストドリンク",S.bk.cast+"%"],["ショット",S.bk.shot+"%"],
     ["シャンパン",S.bk.champ+"%"],["ワイン",S.bk.wine+"%"],["焼酎・ウイスキー",S.bk.bottle+"%"],
     ["フード",S.bk.food+"%"],["その他",S.bk.other+"%"],

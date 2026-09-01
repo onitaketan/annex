@@ -238,7 +238,7 @@
     <section>
       <h2>自分の取り分の内訳<span class="note">卓ごとのバックと時給</span></h2>
       <div class="card bd" id="bdGet"></div>
-      <div class="msg" style="margin-top:10px">時給分は、この卓にいた時間ぶんの目安です。待機時間の時給、厚生費、送り代、源泉は1日単位でかかるものなので、ここには入れず日計で反映しています。</div>
+      <div class="msg" style="margin-top:10px">時給分は、この卓にいた時間がまるごと時給の対象時間に入っていた場合の目安です。実際の割り当ては、その日の出勤・退勤から計算した時給を卓ごとの時間で按分するので、シート側の数字が正になります。待機時間の時給、厚生費、送り代、源泉は1日単位でかかるものなので、ここには入れず日計で反映しています。</div>
     </section>
 
     <section>
@@ -277,6 +277,16 @@
         <div class="seg jade" id="segHourly">
           <button data-h="3500">3,500</button><button data-h="4000">4,000</button><button data-h="4500">4,500</button>
           <button data-h="5000">5,000</button><button data-h="5500">5,500</button><button data-h="6000">6,000</button>
+        </div>
+      </section>
+
+      <section><h2>時給の対象時間<span class="note">この時間帯だけ時給がつきます</span></h2>
+        <div class="card">
+          <div class="row"><div class="lab">時給が始まる時刻</div><input type="time" class="w-time" id="s_wfrom"></div>
+          <div class="row"><div class="lab">時給が止まる時刻<small>日をまたいでも大丈夫です</small></div><input type="time" class="w-time" id="s_wto"></div>
+        </div>
+        <div class="msg" style="margin-top:10px">
+          出勤・退勤がこの時間帯からはみ出した分には時給がつきません。<b>例：21:00に出勤しても、時給は21:30から。</b>お店のルールが違えばここを直してください。
         </div>
       </section>
 
@@ -395,7 +405,8 @@ const MENU={
 const FLOORS={main:{name:"MAIN FLOOR",svc:.30,room:false},fvip:{name:"FLOOR VIP",svc:.35,room:false},room:{name:"VIP ROOM",svc:.35,room:true}};
 const CATS=["cast","shot","champ","wine","bottle","food","other"];
 
-let S={hourly:3500,bkHon:50,bkJonai:50,bkDohan:50,bk:{cast:50,shot:30,champ:20,wine:10,bottle:10,food:0,other:0},base:"net",attr:"hon",kousei:0,okuri:0,gensen:true,passHash:null};
+let S={hourly:3500,bkHon:50,bkJonai:50,bkDohan:50,bk:{cast:50,shot:30,champ:20,wine:10,bottle:10,food:0,other:0},
+  base:"net",attr:"hon",kousei:0,okuri:0,gensen:true,wageFrom:WAGE_FROM,wageTo:WAGE_TO};
 let C={floor:"main",guests:1,ext:0,late:false,honshimei:1,jonai:0,dohan:0,role:"hon",bill:[]};
 let TBLS=[],DAYS={},curMonth="",TEMP=[];
 let CAST=null;          /* {id,name,pass_hash} ログイン中の人 */
@@ -611,7 +622,7 @@ function renderDays(target,titleId,tk,py,ct,editable){
     +`<div class="r dim"><span>うち バック</span><span>¥${yen(m.back)}</span></div>`
     +`<div class="r dim"><span>うち 時給（卓についていた分）</span><span>¥${yen(m.stayWage)}</span></div>`
     +`<div class="r"><span>待機などの時給</span><span>¥${yen(m.wage-m.stayWage)}</span></div>`;
-  if(editable) $("mNote").innerHTML=`時給 ¥${yen(S.hourly)} × その日の勤務時間。厚生費 ¥${yen(S.kousei)} は卓についた日に1回、送り代 ¥${yen(S.okuri)} は「送りを使った」にチェックした日だけ引きます。源泉10.21%は${S.gensen?"":"（今はオフ）"}その日の支給額にかけています。`;
+  if(editable) $("mNote").innerHTML=`時給 ¥${yen(S.hourly)} × その日の実働時間（${S.wageFrom}〜${S.wageTo} に重なった分だけ）。厚生費 ¥${yen(S.kousei)} は卓についた日に1回、送り代 ¥${yen(S.okuri)} は「送りを使った」にチェックした日だけ引きます。源泉10.21%は${S.gensen?"":"（今はオフ）"}その日の支給額にかけています。`;
 
   const map=dayList(editable), ds=Object.keys(map).sort().reverse();
   if(!ds.length){$(target).innerHTML='<div class="empty">この月の記録はまだありません</div>';return;}
@@ -636,10 +647,12 @@ function renderDays(target,titleId,tk,py,ct,editable){
               <input type="time" class="w-time" value="${r.outT}" data-out="${d}"></div>`
             :`<span style="font-family:var(--serif);font-size:15px">${r.inT&&r.outT?`${r.inT} → ${r.outT}`:"—"}</span>`}</div>
         <div class="row">
-          <div class="lab">実働時間<small>${r.auto!==null?`拘束 ${hhmm(r.rawMin)} を30分単位で切り捨て`:"出退勤を入れると自動で計算します。日をまたいでも大丈夫です"}</small></div>
+          <div class="lab">実働時間<small>${r.auto!==null
+            ?`拘束 ${hhmm(r.rawMin)} ・ ${S.wageFrom}〜${S.wageTo} に重なるのは ${hhmm(r.paid)} → 30分単位で切り捨て`
+            :"出退勤を入れると自動で計算します。日をまたいでも大丈夫です"}</small></div>
           ${(editable&&r.auto===null)?`<input type="number" class="w-num" value="${r.hours}" step="0.5" data-hours="${d}">`
             :`<span style="font-family:var(--serif);font-size:16px">${r.hours}</span>`}<span class="suffix">時間</span></div>
-        ${r.stayMin?`<div class="row"><div class="lab">うち卓についた時間${r.rate!==null?`<small>拘束時間の ${r.rate}%</small>`:""}</div>
+        ${r.stayMin?`<div class="row"><div class="lab">うち卓についた時間${r.rate!==null?`<small>${r.paid?"時給対象時間":"拘束時間"}の ${r.rate}%</small>`:""}</div>
           <span style="font-family:var(--serif);font-size:16px">${hhmm(r.stayMin)}</span></div>`:""}
         <div class="row">
           ${editable?`<label class="chk" style="flex:1;padding:0"><input type="checkbox" data-okuri="${d}" ${r.okuri?"checked":""}><span>送りを使った <small>終電で上がった日は外す</small></span></label>`
@@ -651,6 +664,7 @@ function renderDays(target,titleId,tk,py,ct,editable){
               ${r.stayWage?`<div class="r dim"><span>うち 時給（卓 ${hhmm(r.stayMin)}）</span><span>¥${yen(r.stayWage)}</span></div>`:""}`
             :(r.back?`<div class="r"><span>卓のバック合計</span><span>¥${yen(r.back)}</span></div>`:"")}
           ${r.idleWage?`<div class="r"><span>${r.stayWage?"待機などの時給":"時給分"}（${hhmm(Math.round(r.idleWage/S.hourly*60))}）</span><span>¥${yen(r.idleWage)}</span></div>`:""}
+          ${(r.stayMin&&r.wageF<0.999)?`<div class="r dim"><span style="font-size:11.5px;line-height:1.45">卓についた時間の合計が時給の対象時間より長いので、時給は対象時間ぶんを卓ごとの時間で按分しています</span><span></span></div>`:""}
           ${r.kousei?`<div class="r dim"><span>厚生費</span><span>−¥${yen(r.kousei)}</span></div>`:""}
           ${r.okuriFee?`<div class="r dim"><span>送り代</span><span>−¥${yen(r.okuriFee)}</span></div>`:""}
           ${r.gensen?`<div class="r dim"><span>源泉徴収 10.21%</span><span>−¥${yen(r.gensen)}</span></div>`:""}
@@ -663,6 +677,7 @@ function fillStatusForm(){
   $("s_bkHon").value=S.bkHon; $("s_bkJonai").value=S.bkJonai; $("s_bkDohan").value=S.bkDohan;
   CATS.forEach(k=>$("s_bk_"+k).value=S.bk[k]);
   $("s_kousei").value=S.kousei; $("s_okuri").value=S.okuri; $("s_gensen").checked=S.gensen;
+  $("s_wfrom").value=S.wageFrom||WAGE_FROM; $("s_wto").value=S.wageTo||WAGE_TO;
   [...$("segHourly").children].forEach(b=>b.setAttribute("aria-pressed",Number(b.dataset.h)===S.hourly));
   [...$("segBase").children].forEach(b=>b.setAttribute("aria-pressed",b.dataset.b===S.base));
   [...$("segAttr").children].forEach(b=>b.setAttribute("aria-pressed",b.dataset.a===S.attr));
@@ -876,6 +891,9 @@ $("cLate").addEventListener("change",e=>{C.late=e.target.checked;render();});
 CATS.forEach(k=>$("s_bk_"+k).addEventListener("input",e=>{S.bk[k]=Number(e.target.value)||0;saveStatusSoon();render();}));
 $("s_gensen").addEventListener("change",e=>{S.gensen=e.target.checked;saveStatusSoon();renderMonthBar();
   renderDays("days","mTitle","sTake","sPay","sCnt",true);});
+[["s_wfrom","wageFrom"],["s_wto","wageTo"]].forEach(([id,k])=>
+  $(id).addEventListener("change",e=>{S[k]=e.target.value||(k==="wageFrom"?WAGE_FROM:WAGE_TO);
+    saveStatusSoon();renderMonthBar();renderDays("days","mTitle","sTake","sPay","sCnt",true);}));
 
 /* ══════ 源氏名ゲート ══════ */
 let gateCast=null,gateNew=false;
