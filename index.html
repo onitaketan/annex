@@ -190,9 +190,9 @@
       <div class="card">
         <div style="margin-bottom:12px">
           <div class="seg" id="segFloor">
-            <button data-f="main" aria-pressed="true">MAIN<br><small style="font-size:10px;opacity:.7">税サ30%</small></button>
-            <button data-f="fvip" aria-pressed="false">FLOOR VIP<br><small style="font-size:10px;opacity:.7">税サ35%</small></button>
-            <button data-f="room" aria-pressed="false">VIP ROOM<br><small style="font-size:10px;opacity:.7">税サ35%</small></button>
+            <button data-f="main" aria-pressed="true">MAIN<br><small style="font-size:10px;opacity:.7">サ30%＋税</small></button>
+            <button data-f="fvip" aria-pressed="false">FLOOR VIP<br><small style="font-size:10px;opacity:.7">サ35%＋税</small></button>
+            <button data-f="room" aria-pressed="false">VIP ROOM<br><small style="font-size:10px;opacity:.7">サ35%＋税</small></button>
           </div>
         </div>
         <div class="row"><div class="lab">男性客の人数</div>
@@ -309,7 +309,8 @@
       <section><h2>計算のルール</h2><div class="card">
         <div style="padding:4px 0 10px">
           <div style="font-size:13px;margin-bottom:8px">バックの計算のもとになる金額</div>
-          <div class="seg jade" id="segBase"><button data-b="net">税サ抜き</button><button data-b="gross">税サ込み</button></div>
+          <div class="seg jade" id="segBase"><button data-b="net">サービス料・税の前</button><button data-b="gross">サービス料・税の後</button></div>
+          <div style="font-size:11px;color:var(--muted);margin-top:8px">「後」を選ぶと、サービス料と消費税を足した金額にバック率をかけます。ふつうは「前」です。</div>
         </div>
         <div style="padding:10px 0 4px;border-top:1px solid var(--line)">
           <div style="font-size:13px;margin-bottom:4px">卓の飲食売上は誰につくか</div>
@@ -403,6 +404,7 @@ const MENU={
   other:{label:"その他",items:[["追加料金 アサヒスーパードライ",500],["追加料金 中々(麦)",500],["追加料金 バランタイン",500],["追加料金 レッドブルウォッカ",500],["追加料金 ボウモア12年",800],["追加料金 獺祭",800],["ソフトドリンクピッチャー",1000],["フリー",500],["配達料",700]]}
 };
 const FLOORS={main:{name:"MAIN FLOOR",svc:.30,room:false},fvip:{name:"FLOOR VIP",svc:.35,room:false},room:{name:"VIP ROOM",svc:.35,room:true}};
+const TAX=0.10;   /* 消費税。サービス料とは別に、小計＋サービス料の全体にかかる */
 const CATS=["cast","shot","champ","wine","bottle","food","other"];
 
 let S={hourly:3500,bkHon:50,bkJonai:50,bkDohan:50,bk:{cast:50,shot:30,champ:20,wine:10,bottle:10,food:0,other:0},
@@ -489,7 +491,8 @@ function calcTable(c,st){
   CATS.forEach(k=>{catNet[k]=0;mineNet[k]=0;});
   (c.bill||[]).forEach(l=>{const a=l.price*l.qty;order+=a;catNet[l.cat]+=a;if(l.mine)mineNet[l.cat]+=a;});
   const sub=setFee+extFee+honFee+jonaiFee+dohanFee+roomFee+single+order;
-  const svcFee=sub*svc,total=sub+svcFee,mul=(st.base==="gross")?(1+svc):1;
+  const svcFee=sub*svc, taxFee=(sub+svcFee)*TAX, total=sub+svcFee+taxFee;
+  const mul=(st.base==="gross")?((1+svc)*(1+TAX)):1;
 
   let shimeiBack=0,shimeiLabel="",shimeiPct=0;
   if(c.role==="hon"&&c.honshimei>0){shimeiBack=3000*units*mul*(st.bkHon/100);shimeiLabel="本指名バック";shimeiPct=st.bkHon;}
@@ -511,7 +514,7 @@ function calcTable(c,st){
     const b=src*mul*(st.bk[k]/100);orderBack+=b;backLines.push([MENU[k].label,src,st.bk[k],b]);});
 
   const backTotal=shimeiBack+dohanBack+orderBack;
-  return {f,units,setFee,extFee,honFee,jonaiFee,dohanFee,roomFee,single,order,sub,svcFee,total,
+  return {f,units,setFee,extFee,honFee,jonaiFee,dohanFee,roomFee,single,order,sub,svcFee,taxFee,total,
     shimeiBack,shimeiLabel,shimeiPct,dohanBack,orderBack,backLines,
     backTotal,shareNote,stayMin,wageShare,take:backTotal+wageShare};
 }
@@ -585,7 +588,8 @@ function render(){
   if(r.order)p.push(["飲食",r.order]);
   $("bdPay").innerHTML=p.map(x=>`<div class="r"><span>${x[0]}</span><span>¥${yen(x[1])}</span></div>`).join("")
     +`<div class="r sum"><span>小計</span><span>¥${yen(r.sub)}</span></div>`
-    +`<div class="r"><span>税＆サービス料 ${(r.f.svc*100)}%${C.late?" ＋深夜10%":""}</span><span>¥${yen(r.svcFee)}</span></div>`
+    +`<div class="r"><span>サービス料 ${(r.f.svc*100)}%${C.late?" ＋深夜チャージ10%":""}</span><span>¥${yen(r.svcFee)}</span></div>`
+    +`<div class="r"><span>消費税 ${TAX*100}%<span style="font-family:var(--sans);font-size:11px;color:var(--muted)">（小計＋サービス料に対して）</span></span><span>¥${yen(r.taxFee)}</span></div>`
     +`<div class="r total"><span>お支払い</span><span>¥${yen(r.total)}</span></div>`
     +(C.guests>1?`<div class="r dim"><span>1人あたり（${C.guests}名で割った場合）</span><span>¥${yen(r.total/C.guests)}</span></div>`:"");
 

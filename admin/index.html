@@ -229,7 +229,7 @@ function renderDetail(id){
     ["同伴バック",S.bkDohan+"%"],["キャストドリンク",S.bk.cast+"%"],["ショット",S.bk.shot+"%"],
     ["シャンパン",S.bk.champ+"%"],["ワイン",S.bk.wine+"%"],["焼酎・ウイスキー",S.bk.bottle+"%"],
     ["フード",S.bk.food+"%"],["その他",S.bk.other+"%"],
-    ["計算のもと",S.base==="net"?"税サ抜き":"税サ込み"],
+    ["バックのもと",S.base==="net"?"サービス料・税の前":"サービス料・税の後"],
     ["飲食売上の帰属",{hon:"本指名が総取り",split:"指名者で按分",self:"自分宛のみ"}[S.attr]],
     ["厚生費",`¥${yen(S.kousei)}`],["送り代",`¥${yen(S.okuri)}`],["源泉徴収",S.gensen?"あり":"なし"],
     ["パスコード",d.cast.pass_hash?"設定あり":"未設定"]];
