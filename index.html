@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ANNEX 台帳</title>
+<style>
+  :root{
+    --bg:#17161B; --panel:#201F26; --panel2:#25242C; --line:#33323C;
+    --gold:#C4AE73; --jade:#8FB3A2; --text:#E9E6DE; --muted:#8B8679;
+    --serif:"Hiragino Mincho ProN","Yu Mincho","YuMincho","Noto Serif JP",serif;
+    --sans:"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic","Noto Sans JP",system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.6;padding-bottom:70px}
+  .wrap{max-width:640px;margin:0 auto;padding:0 14px}
+
+  .ledger{position:sticky;top:0;z-index:40;background:var(--bg);border-bottom:1px solid var(--line)}
+  .ledger-in{max-width:640px;margin:0 auto;display:flex}
+  .col{flex:1;padding:13px 14px 11px}
+  .col + .col{border-left:1px solid var(--line)}
+  .col .k{font-size:11.5px;color:var(--muted);letter-spacing:.05em}
+  .col .v{font-family:var(--serif);font-size:28px;line-height:1.15;margin-top:2px;font-feature-settings:"palt"}
+  .col .v .yen{font-size:16px;margin-right:2px;opacity:.75}
+  .pay .v{color:var(--gold)} .get .v{color:var(--jade)}
+  .col .s{font-size:11px;color:var(--muted);margin-top:2px;min-height:16px}
+  .mbar{max-width:640px;margin:0 auto;display:flex;gap:14px;padding:8px 14px;border-top:1px solid var(--line);font-size:11.5px;color:var(--muted);align-items:baseline}
+  .mbar b{font-family:var(--serif);font-size:15px;color:var(--jade);font-weight:400}
+  .mbar .g{font-family:var(--serif);font-size:15px;color:var(--gold)}
+  .mbar .sync{margin-left:auto;font-size:10.5px}
+
+  .tabs{display:flex;border-bottom:1px solid var(--line);margin-bottom:18px}
+  .tab{flex:1;background:none;border:0;color:var(--muted);font-family:var(--sans);font-size:13.5px;padding:13px 4px;cursor:pointer;border-bottom:2px solid transparent}
+  .tab[aria-selected="true"]{color:var(--text);border-bottom-color:var(--gold)}
+
+  section{margin-bottom:26px}
+  h2{font-family:var(--serif);font-size:15px;font-weight:600;margin:0 0 10px;letter-spacing:.02em}
+  h2 .note{font-family:var(--sans);font-size:11px;color:var(--muted);font-weight:400;margin-left:8px}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px}
+  .row{display:flex;align-items:center;gap:12px;padding:9px 0}
+  .row + .row{border-top:1px solid var(--line)}
+  .row .lab{flex:1;min-width:0;font-size:14px}
+  .row .lab small{display:block;color:var(--muted);font-size:11px;line-height:1.4}
+
+  input[type=number],input[type=date],input[type=text],input[type=password]{
+    background:var(--panel2);border:1px solid var(--line);color:var(--text);
+    font-family:var(--sans);font-size:15px;border-radius:7px;padding:9px 10px;width:100%;
+    -webkit-appearance:none;appearance:none;
+  }
+  input[type=number]{text-align:right;font-family:var(--serif);font-size:16px}
+  input.w-num{width:96px;flex:none} input.w-pct{width:84px;flex:none} input.w-date{width:158px;flex:none}
+  input.w-text{width:136px;flex:none}
+  .suffix{color:var(--muted);font-size:12px;margin-left:-6px}
+
+  .step{display:flex;flex:none}
+  .step button{width:34px;height:34px;background:var(--panel2);border:1px solid var(--line);color:var(--text);font-size:17px;line-height:1;cursor:pointer}
+  .step button:first-child{border-radius:7px 0 0 7px}
+  .step button:last-child{border-radius:0 7px 7px 0}
+  .step .n{width:46px;text-align:center;font-family:var(--serif);font-size:17px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);height:34px;line-height:34px;background:var(--panel2)}
+
+  .chk{display:flex;align-items:center;gap:9px;cursor:pointer;padding:9px 0}
+  .chk input{width:19px;height:19px;accent-color:var(--gold);flex:none}
+  .chk small{color:var(--muted);font-size:11px}
+
+  .seg{display:flex;gap:6px;flex-wrap:wrap}
+  .seg button{flex:1;min-width:86px;background:var(--panel2);border:1px solid var(--line);color:var(--muted);font-family:var(--sans);font-size:13px;padding:10px 6px;border-radius:7px;cursor:pointer}
+  .seg button[aria-pressed="true"]{border-color:var(--gold);color:var(--text);background:#2C2820}
+  .seg.jade button[aria-pressed="true"]{border-color:var(--jade);background:#232C28}
+
+  details{border:1px solid var(--line);border-radius:9px;overflow:hidden;margin-bottom:7px;background:var(--panel)}
+  summary{padding:12px 14px;cursor:pointer;font-size:14px;list-style:none;display:flex;justify-content:space-between}
+  summary::-webkit-details-marker{display:none}
+  summary .cnt{color:var(--muted);font-size:12px}
+  .items{border-top:1px solid var(--line)}
+  .item{display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;background:none;border:0;width:100%;text-align:left;color:var(--text);font-family:var(--sans)}
+  .item + .item{border-top:1px solid #2A2932}
+  .item .nm{flex:1;font-size:13.5px;line-height:1.35}
+  .item .pr{font-family:var(--serif);font-size:14px;color:var(--muted);white-space:nowrap}
+  .item:active{background:var(--panel2)}
+
+  .bill{border:1px solid var(--line);border-radius:10px;background:var(--panel);overflow:hidden}
+  .bl{display:flex;align-items:center;gap:9px;padding:10px 12px}
+  .bl + .bl{border-top:1px solid var(--line)}
+  .bl .nm{flex:1;font-size:13.5px;line-height:1.35}
+  .bl .amt{font-family:var(--serif);font-size:14px;white-space:nowrap}
+  .bl .del{background:none;border:0;color:var(--muted);font-size:19px;cursor:pointer;padding:0 3px;line-height:1}
+  .tag{border:1px solid var(--line);background:var(--panel2);color:var(--muted);font-size:10.5px;padding:4px 8px;border-radius:20px;cursor:pointer;white-space:nowrap;font-family:var(--sans)}
+  .tag[aria-pressed="true"]{border-color:var(--jade);color:var(--jade);background:#232C28}
+  .empty{padding:22px 14px;text-align:center;color:var(--muted);font-size:13px;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
+
+  .bd{font-size:13px}
+  .bd .r{display:flex;justify-content:space-between;padding:7px 0;gap:12px}
+  .bd .r + .r{border-top:1px solid var(--line)}
+  .bd .r span:last-child{font-family:var(--serif);font-size:14px;white-space:nowrap}
+  .bd .r.sum{border-top:1px solid var(--line);margin-top:4px;padding-top:10px}
+  .bd .r.total span:last-child{color:var(--gold);font-size:17px}
+  .bd .r.total-j span:last-child{color:var(--jade);font-size:17px}
+  .bd .r.dim span{color:var(--muted)}
+
+  .msg{border:1px solid var(--line);border-left:2px solid var(--gold);background:var(--panel);border-radius:0 9px 9px 0;padding:12px 14px;font-size:12.5px;color:var(--muted);line-height:1.65}
+  .msg.j{border-left-color:var(--jade)}
+  .msg b{color:var(--text);font-weight:600}
+
+  .btn{width:100%;border-radius:8px;padding:14px;font-family:var(--sans);font-size:14px;cursor:pointer;border:1px solid var(--line);background:var(--panel2);color:var(--text)}
+  .btn.primary{background:#2C2820;border-color:var(--gold);color:var(--gold)}
+  .btn.jade{background:#232C28;border-color:var(--jade);color:var(--jade)}
+  .btn.ghost{background:none;color:var(--muted);padding:11px;font-size:13px}
+  .btn + .btn{margin-top:8px}
+
+  .mnav{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+  .mnav button{width:40px;height:40px;background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:8px;font-size:16px;cursor:pointer}
+  .mnav .t{flex:1;text-align:center;font-family:var(--serif);font-size:18px}
+  .stats{display:flex;border:1px solid var(--line);border-radius:10px;background:var(--panel);overflow:hidden}
+  .stat{flex:1;padding:13px 10px;text-align:center}
+  .stat + .stat{border-left:1px solid var(--line)}
+  .stat .k{font-size:10.5px;color:var(--muted)}
+  .stat .v{font-family:var(--serif);font-size:19px;margin-top:3px}
+  .stat.j .v{color:var(--jade)} .stat.g .v{color:var(--gold)}
+  .day{border:1px solid var(--line);border-radius:10px;background:var(--panel);margin-top:9px;overflow:hidden}
+  .dhead{display:flex;align-items:center;gap:10px;padding:12px 13px;cursor:pointer}
+  .dhead .d{font-family:var(--serif);font-size:16px;width:66px;flex:none}
+  .dhead .c{flex:1;font-size:11.5px;color:var(--muted)}
+  .dhead .a{font-family:var(--serif);font-size:15px;color:var(--jade)}
+  .dbody{border-top:1px solid var(--line);padding:12px 13px}
+  .tline{display:flex;align-items:center;gap:9px;padding:8px 0;font-size:13px}
+  .tline + .tline{border-top:1px solid #2A2932}
+  .tline .n{flex:1;line-height:1.35}
+  .tline .n small{display:block;color:var(--muted);font-size:11px}
+  .tline .p{font-family:var(--serif);color:var(--gold);font-size:13.5px;white-space:nowrap}
+  .tline .b{font-family:var(--serif);color:var(--jade);font-size:13.5px;white-space:nowrap}
+  .tline .x{background:none;border:0;color:var(--muted);font-size:18px;cursor:pointer;padding:0 2px}
+
+  .saved{font-size:11px;color:var(--jade);min-height:16px;margin-top:8px;text-align:right}
+  .gate{max-width:400px;margin:60px auto;padding:0 14px}
+  .hide{display:none !important}
+</style>
+</head>
+<body>
+
+<div class="ledger">
+  <div class="ledger-in">
+    <div class="col pay">
+      <div class="k">この卓の支払い</div>
+      <div class="v"><span class="yen">¥</span><span id="hPay">0</span></div>
+      <div class="s" id="hPaySub"></div>
+    </div>
+    <div class="col get">
+      <div class="k">この卓のバック</div>
+      <div class="v"><span class="yen">¥</span><span id="hGet">0</span></div>
+      <div class="s" id="hGetSub"></div>
+    </div>
+  </div>
+  <div class="mbar">
+    <span id="mLabel">今月</span>
+    <span>手取り <b id="mTake">¥0</b></span>
+    <span>支払 <span class="g" id="mPay">¥0</span></span>
+    <span class="sync" id="sync">接続中…</span>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="msg hide" id="offline" style="border-left-color:#D08A7A;margin:14px 0"></div>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-t="check">会計</button>
+    <button class="tab" role="tab" aria-selected="false" data-t="riko">璃子シート</button>
+    <button class="tab" role="tab" aria-selected="false" data-t="admin">管理</button>
+  </div>
+
+  <!-- ════════ 会計 ════════ -->
+  <div id="p-check">
+    <section>
+      <h2>席と時間</h2>
+      <div class="card">
+        <div style="margin-bottom:12px">
+          <div class="seg" id="segFloor">
+            <button data-f="main" aria-pressed="true">MAIN<br><small style="font-size:10px;opacity:.7">税サ30%</small></button>
+            <button data-f="fvip" aria-pressed="false">FLOOR VIP<br><small style="font-size:10px;opacity:.7">税サ35%</small></button>
+            <button data-f="room" aria-pressed="false">VIP ROOM<br><small style="font-size:10px;opacity:.7">税サ35%</small></button>
+          </div>
+        </div>
+        <div class="row"><div class="lab">男性客の人数</div>
+          <div class="step" data-step="guests"><button data-d="-1">−</button><div class="n" id="n-guests">1</div><button data-d="1">＋</button></div></div>
+        <div class="row"><div class="lab">延長<small>25分ごと。0なら基本の50分のみ</small></div>
+          <div class="step" data-step="ext"><button data-d="-1">−</button><div class="n" id="n-ext">0</div><button data-d="1">＋</button></div></div>
+        <div class="row"><label class="chk" style="flex:1;padding:0"><input type="checkbox" id="cLate"><span>23時以降に来店 <small>深夜チャージ +10%</small></span></label></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>指名と同伴</h2>
+      <div class="card">
+        <div class="row"><div class="lab">本指名<small>¥3,000 / 50分（25分は¥1,500）</small></div>
+          <div class="step" data-step="honshimei"><button data-d="-1">−</button><div class="n" id="n-honshimei">1</div><button data-d="1">＋</button></div></div>
+        <div class="row"><div class="lab">場内指名<small>¥3,000 / 50分（25分は¥1,500）</small></div>
+          <div class="step" data-step="jonai"><button data-d="-1">−</button><div class="n" id="n-jonai">0</div><button data-d="1">＋</button></div></div>
+        <div class="row"><div class="lab">同伴<small>1人あたり ¥5,000</small></div>
+          <div class="step" data-step="dohan"><button data-d="-1">−</button><div class="n" id="n-dohan">0</div><button data-d="1">＋</button></div></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>璃子ちゃんの立場<span class="note">この卓での指名区分</span></h2>
+      <div class="seg jade" id="segRole">
+        <button data-r="hon" aria-pressed="true">本指名</button>
+        <button data-r="jonai" aria-pressed="false">場内指名</button>
+        <button data-r="help" aria-pressed="false">ヘルプ</button>
+      </div>
+      <div class="msg" style="margin-top:10px" id="roleMsg"></div>
+    </section>
+
+    <section><h2>注文<span class="note">タップで伝票に追加</span></h2><div id="menu"></div></section>
+
+    <section>
+      <h2>伝票</h2>
+      <div class="bill" id="bill"><div class="empty" style="border:0">まだ何も入っていません</div></div>
+      <button class="btn ghost" id="clearBill" style="margin-top:8px">伝票を空にする</button>
+    </section>
+
+    <section><h2>お客様側の内訳</h2><div class="card bd" id="bdPay"></div></section>
+
+    <section>
+      <h2>璃子ちゃん側の内訳<span class="note">卓ごとのバック</span></h2>
+      <div class="card bd" id="bdGet"></div>
+      <div class="msg" style="margin-top:10px">時給・厚生費・源泉は1日単位でかかるものなので、ここには入れず日計で反映しています。</div>
+    </section>
+
+    <section>
+      <h2>この卓を記録する</h2>
+      <div class="card">
+        <div class="row"><div class="lab">日付</div><input type="date" class="w-date" id="recDate"></div>
+        <div class="row"><div class="lab">卓の呼び名<small>空欄なら自動で番号を振ります</small></div>
+          <input type="text" id="recLabel" placeholder="1卓目" style="width:132px;flex:none"></div>
+      </div>
+      <button class="btn primary" id="saveTable" style="margin-top:10px">記録に追加する</button>
+      <div class="saved" id="recMsg"></div>
+    </section>
+  </div>
+
+  <!-- ════════ 璃子シート ════════ -->
+  <div id="p-riko" class="hide">
+    <div id="gate" class="gate hide">
+      <h2 style="text-align:center">パスコードを入力</h2>
+      <input type="password" id="gateInput" inputmode="numeric" placeholder="パスコード" style="text-align:center;font-size:20px;letter-spacing:.3em">
+      <button class="btn jade" id="gateGo" style="margin-top:12px">開く</button>
+      <div class="saved" id="gateMsg" style="text-align:center"></div>
+    </div>
+
+    <div id="rikoBody">
+      <div class="mnav">
+        <button data-mv="-1">‹</button><div class="t" id="mTitle">—</div><button data-mv="1">›</button>
+      </div>
+      <div class="stats">
+        <div class="stat j"><div class="k">手取り合計</div><div class="v" id="sTake">¥0</div></div>
+        <div class="stat g"><div class="k">お店の売上</div><div class="v" id="sPay">¥0</div></div>
+        <div class="stat"><div class="k">出勤 / 卓数</div><div class="v" id="sCnt">0 / 0</div></div>
+      </div>
+      <div class="msg j" style="margin-top:8px" id="mNote"></div>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:8px">
+        <div style="flex:1;font-size:11px;color:var(--jade)" id="stUpdated"></div>
+        <button class="btn ghost" id="lockNow" style="width:auto;padding:8px 14px">ロックする</button>
+      </div>
+      <div id="days" style="margin-top:14px"></div>
+
+      <section style="margin-top:30px"><h2>時給<span class="note">先月の売上で決まるランク</span></h2>
+        <div class="seg jade" id="segHourly">
+          <button data-h="3500">3,500</button><button data-h="4000">4,000</button><button data-h="4500">4,500</button>
+          <button data-h="5000">5,000</button><button data-h="5500">5,500</button><button data-h="6000">6,000</button>
+        </div>
+      </section>
+
+      <section><h2>指名・同伴のバック</h2><div class="card">
+        <div class="row"><div class="lab">本指名<small>指名料 ¥3,000 に対して</small></div><input type="number" class="w-pct" id="s_bkHon"><span class="suffix">%</span></div>
+        <div class="row"><div class="lab">場内指名<small>指名料 ¥3,000 に対して</small></div><input type="number" class="w-pct" id="s_bkJonai"><span class="suffix">%</span></div>
+        <div class="row"><div class="lab">同伴<small>同伴料 ¥5,000 に対して</small></div><input type="number" class="w-pct" id="s_bkDohan"><span class="suffix">%</span></div>
+      </div></section>
+
+      <section><h2>売上のバック率</h2><div class="card">
+        <div class="row"><div class="lab">キャストドリンク<small>レディースドリンク・ミモザ等</small></div><input type="number" class="w-pct" id="s_bk_cast"><span class="suffix">%</span></div>
+        <div class="row"><div class="lab">ショット</div><input type="number" class="w-pct" id="s_bk_shot"><span class="suffix">%</span></div>
+        <div class="row"><div class="lab">シャンパン</div><input type="number" class="w-pct" id="s_bk_champ"><span class="suffix">%</span></div>
+        <div class="row"><div class="lab">ワイン</div><input type="number" class="w-pct" id="s_bk_wine"><span class="suffix">%</span></div>
+        <div class="row"><div class="lab">焼酎・ウイスキー</div><input type="number" class="w-pct" id="s_bk_bottle"><span class="suffix">%</span></div>
+        <div class="row"><div class="lab">フード</div><input type="number" class="w-pct" id="s_bk_food"><span class="suffix">%</span></div>
+        <div class="row"><div class="lab">その他<small>追加料金・ピッチャー等</small></div><input type="number" class="w-pct" id="s_bk_other"><span class="suffix">%</span></div>
+      </div></section>
+
+      <section><h2>計算のルール</h2><div class="card">
+        <div style="padding:4px 0 10px">
+          <div style="font-size:13px;margin-bottom:8px">バックの計算のもとになる金額</div>
+          <div class="seg jade" id="segBase"><button data-b="net">税サ抜き</button><button data-b="gross">税サ込み</button></div>
+        </div>
+        <div style="padding:10px 0 4px;border-top:1px solid var(--line)">
+          <div style="font-size:13px;margin-bottom:4px">卓の飲食売上は誰につくか</div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:9px">本指名が1人でもいる卓での扱い</div>
+          <div class="seg jade" id="segAttr"><button data-a="hon">本指名が総取り</button><button data-a="split">指名者で按分</button><button data-a="self">自分宛の分だけ</button></div>
+        </div>
+      </div></section>
+
+      <section><h2>差し引かれるもの</h2><div class="card">
+        <div class="row"><div class="lab">厚生費など<small>卓についた日に1回</small></div><input type="number" class="w-num" id="s_kousei" step="500"><span class="suffix">円</span></div>
+        <div class="row"><div class="lab">送り代<small>1回あたり。使った日だけ引きます</small></div><input type="number" class="w-num" id="s_okuri" step="500"><span class="suffix">円</span></div>
+        <div class="row"><label class="chk" style="flex:1;padding:0"><input type="checkbox" id="s_gensen"><span>源泉徴収 10.21% を引く <small>業務委託の場合</small></span></label></div>
+      </div></section>
+
+      <section>
+        <h2>パスコード</h2>
+        <div class="msg" style="margin-bottom:10px">
+          <b>このパスコードは、他の人に画面を開かれないためのものです。</b><br>
+          保存した計算書の履歴は管理側でバックアップされ、オーナーも見られます。残したくない記録は、下の「自分の記録」で保存せずに使ってください。
+        </div>
+        <div class="card">
+          <div class="row"><div class="lab">新しいパスコード<small>空欄で保存すると解除されます</small></div>
+            <input type="password" id="pcInput" inputmode="numeric" style="width:132px;flex:none;text-align:center"></div>
+        </div>
+        <button class="btn jade" id="pcSave" style="margin-top:10px">パスコードを保存</button>
+        <div class="saved" id="pcMsg"></div>
+      </section>
+
+      <section style="margin-top:30px">
+        <h2>自分の記録<span class="note">他のお客様の卓など</span></h2>
+        <div class="msg" style="margin-bottom:10px">
+          保存した記録は管理側にバックアップされ、オーナーも見られます。<b>保存しないを選べば、この端末で閉じるまでの一時表示になります。</b>ただし保存しなかった分は月の合計に残らないので、正確な手取りは追えなくなります。どちらにするかは自分で決めてください。
+        </div>
+        <div class="card">
+          <div class="row"><div class="lab">日付</div><input type="date" class="w-date" id="rkDate"></div>
+          <div class="row"><div class="lab">呼び名<small>空欄なら「自分の卓」</small></div><input type="text" id="rkLabel" placeholder="自分の卓" style="width:132px;flex:none"></div>
+          <div class="row"><div class="lab">この卓のバック</div><input type="number" class="w-num" id="rkBack" step="500"><span class="suffix">円</span></div>
+          <div class="row"><label class="chk" style="flex:1;padding:0"><input type="checkbox" id="rkSave" checked><span>この記録を保存する <small>外すと一時表示のみ</small></span></label></div>
+        </div>
+        <button class="btn jade" id="rkAdd" style="margin-top:10px">記録に追加する</button>
+        <div class="saved" id="rkMsg"></div>
+      </section>
+
+      <div class="saved" id="savedMsg"></div>
+      <div style="height:40px"></div>
+    </div>
+  </div>
+
+  <!-- ════════ 管理 ════════ -->
+  <div id="p-admin" class="hide">
+    <div class="mnav">
+      <button data-mv="-1">‹</button><div class="t" id="aTitle">—</div><button data-mv="1">›</button>
+    </div>
+    <div class="stats">
+      <div class="stat j"><div class="k">璃子ちゃんの手取り</div><div class="v" id="aTake">¥0</div></div>
+      <div class="stat g"><div class="k">支払い合計</div><div class="v" id="aPay">¥0</div></div>
+      <div class="stat"><div class="k">出勤 / 卓数</div><div class="v" id="aCnt">0 / 0</div></div>
+    </div>
+    <div class="msg" style="margin-top:8px">保存されている記録だけを集計しています。璃子ちゃんが保存しない選択をした分は含まれないため、月の合計が実際の手取りと一致するとは限りません。</div>
+    <div id="aDays" style="margin-top:14px"></div>
+    <section style="margin-top:26px">
+      <h2>現在のステータス<span class="note">読み取り専用</span></h2>
+      <div class="card bd" id="aStatus"></div>
+    </section>
+    <div style="height:40px"></div>
+  </div>
+</div>
+
+<script>
+/* ══════ Supabase ══════ */
+const SB_URL="https://owabuvuktpokcgmtjfdi.supabase.co";
+const SB_KEY="sb_publishable_My1JblsUs1sB2EjCUrWv4g_TwE2-cM7";
+async function sb(path,opts={}){
+  let res;
+  try{
+    res=await fetch(SB_URL+"/rest/v1/"+path,{
+      ...opts,
+      headers:{apikey:SB_KEY,Authorization:"Bearer "+SB_KEY,
+        "Content-Type":"application/json",Prefer:opts.prefer||"return=representation",
+        ...(opts.headers||{})}
+    });
+  }catch(net){
+    throw new Error("サーバーに接続できません（通信がブロックされています）");
+  }
+  if(!res.ok){
+    let d=""; try{const j=JSON.parse(await res.text()); d=j.message||j.hint||"";}catch(_){}
+    throw new Error(`${res.status} ${d}`.trim());
+  }
+  const txt=await res.text();
+  return txt?JSON.parse(txt):null;
+}
+function syncMsg(t,ok=true){const e=$("sync");e.textContent=t;e.style.color=ok?"var(--jade)":"#D08A7A";
+  clearTimeout(syncMsg._t);syncMsg._t=setTimeout(()=>{e.textContent="";},ok?2200:6000);}
+function offline(on,why){
+  const b=$("offline");
+  b.classList.toggle("hide",!on);
+  if(on) b.innerHTML=`<b>サーバーに接続できていません。</b>${why?"（"+why+"）":""}<br>この画面はローカルのプレビューでは通信できません。GitHub Pages などの https のURLから開いてください。入力しても保存されません。`;
+}
+
+/* ══════ メニュー ══════ */
+const MENU={
+  cast:{label:"キャストドリンク",items:[["レディースドリンク",1500],["レディースドリンクW",3000],["イベントドリンク",2000],["ミモザ",2000],["女性ゲスト飲み放題",3000],["ゲストドリンク",0]]},
+  shot:{label:"ショット",items:[["1800アネホ",3000],["HABUSH",2500],["コカレロ(ボム)",2500],["クライナー各種",2500],["イエーガーマイスター",2500],["割り代",1000],["テキーラ観覧車 12杯入り",40000],["テキーラシップ",70000]]},
+  champ:{label:"シャンパン",items:[["モエ シャンドン",32000],["ヴーヴ クリコ イエロー",32000],["ヴーヴ クリコ ホワイト",45000],["モエ シャンドン アイス",45000],["モエ・エ・シャンドン ネクターロゼ",50000],["ルイナール ブラン ド ブラン セカンド",55000],["ヴーヴ クリコ エクストラ",60000],["ベル エポック",90000],["ドン ペリニヨン",90000],["ソウメイ",90000],["クリュッグ グランド キュヴェ",110000],["ベル エポック ロゼ",150000],["アルマン ド ブリニャック ゴールド",150000],["ルイ ロデレール クリスタル",160000],["ドン ペリニヨン ロゼ",198000],["クリュッグ グランド キュヴェ ロゼ",198000],["ソウメイ ロゼ",220000],["アルマン ド ブリニャック ロゼ",249000],["ルイ ロデレール クリスタル ロゼ",280000]]},
+  wine:{label:"ワイン",items:[["カベルネ ソーヴィニヨン(米)",32000],["ヴィーニャス デ ガイン ブランコ(西)",32000],["シャブリ",40000],["バローロ ブローリオ(伊)",45000],["モンテリーブラン(仏)",55000],["ニュイ サン ジョルジュ(仏)",60000],["ムルソー ル リモザン(仏)",65000],["オーパス ワン(米)",188000]]},
+  bottle:{label:"焼酎・ウイスキー",items:[["だいやめ(芋)",12000],["二階堂 吉四六(麦)",14800],["シーバス リーガル ミズナラ12年",17000],["ラフロイグ10年",20000],["知多",35000],["山崎",40000],["白州",40000],["響",45000],["マッカラン12年",45000],["HABUSH（ボトル）",50000],["1800 アネホ（ボトル）",98000],["クラセ アスール レポサド",140000]]},
+  food:{label:"フード",items:[["おにぎり(鮭or明太子)",600],["ミックスナッツ&サラミ",800],["チョコレート盛り合わせ",800],["枝豆",800],["梅長芋きゅうり",800],["ポップコーン",1000],["ポテトフライ",1200],["ソーセージグリル",1200],["鶏のから揚げ",1200],["とろとろオムライス",1800],["海鮮焼きそば",1800],["ハラミの鉄板焼き",2200]]},
+  other:{label:"その他",items:[["追加料金 アサヒスーパードライ",500],["追加料金 中々(麦)",500],["追加料金 バランタイン",500],["追加料金 レッドブルウォッカ",500],["追加料金 ボウモア12年",800],["追加料金 獺祭",800],["ソフトドリンクピッチャー",1000],["フリー",500],["配達料",700]]}
+};
+const FLOORS={main:{name:"MAIN FLOOR",svc:.30,room:false},fvip:{name:"FLOOR VIP",svc:.35,room:false},room:{name:"VIP ROOM",svc:.35,room:true}};
+const CATS=["cast","shot","champ","wine","bottle","food","other"];
+
+let S={hourly:3500,bkHon:50,bkJonai:50,bkDohan:50,bk:{cast:50,shot:30,champ:20,wine:10,bottle:10,food:0,other:0},base:"net",attr:"hon",kousei:0,okuri:0,gensen:true,passHash:null};
+let C={floor:"main",guests:1,ext:0,late:false,honshimei:1,jonai:0,dohan:0,role:"hon",bill:[]};
+let TBLS=[],DAYS={},curMonth="",unlocked=false,TEMP=[];
+
+const yen=n=>Math.round(n).toLocaleString("ja-JP");
+const $=id=>document.getElementById(id);
+const pad=n=>String(n).padStart(2,"0");
+const todayStr=()=>{const d=new Date();return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;};
+const LS={get(k){try{return localStorage.getItem(k);}catch(e){return null;}},
+  set(k,v){try{localStorage.setItem(k,v);}catch(e){}},
+  del(k){try{localStorage.removeItem(k);}catch(e){}}};
+async function sha(t){const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(t));
+  return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("");}
+
+/* ══════ 読み書き ══════ */
+function fromRow(r){return{hourly:r.hourly,bkHon:+r.bk_hon,bkJonai:+r.bk_jonai,bkDohan:+r.bk_dohan,
+  bk:{cast:+r.bk_cast,shot:+r.bk_shot,champ:+r.bk_champ,wine:+r.bk_wine,bottle:+r.bk_bottle,food:+r.bk_food,other:+r.bk_other},
+  base:r.base,attr:r.attr,kousei:r.kousei,okuri:r.okuri,gensen:r.gensen,passHash:r.pass_hash,updatedAt:r.updated_at};}
+function toRow(s){return{hourly:s.hourly,bk_hon:s.bkHon,bk_jonai:s.bkJonai,bk_dohan:s.bkDohan,
+  bk_cast:s.bk.cast,bk_shot:s.bk.shot,bk_champ:s.bk.champ,bk_wine:s.bk.wine,bk_bottle:s.bk.bottle,
+  bk_food:s.bk.food,bk_other:s.bk.other,base:s.base,attr:s.attr,kousei:s.kousei,okuri:s.okuri,
+  gensen:s.gensen,updated_at:new Date().toISOString()};}
+
+async function loadStatus(){
+  const cached=LS.get("annex:status");
+  if(cached){try{S=JSON.parse(cached);fillStatusForm();}catch(e){}}
+  try{
+    const r=await sb("annex_status?id=eq.1&select=*");
+    if(r&&r[0]){S=fromRow(r[0]);LS.set("annex:status",JSON.stringify(S));}
+    offline(false);
+  }
+  catch(e){offline(true,e.message);syncMsg("接続エラー",false);}
+  if(!S.passHash) unlocked=true;
+  else if(LS.get("annex:unlocked")===S.passHash) unlocked=true;
+  fillStatusForm();
+}
+let stT=null;
+function saveStatusSoon(){clearTimeout(stT);stT=setTimeout(async()=>{
+  try{const r=await sb("annex_status?id=eq.1",{method:"PATCH",body:JSON.stringify(toRow(S))});
+    if(r&&r[0]) S.updatedAt=r[0].updated_at;
+    LS.set("annex:status",JSON.stringify(S));
+    $("savedMsg").textContent="保存しました";syncMsg("同期しました");
+    showUpdated(); renderAdmin();
+    setTimeout(()=>{$("savedMsg").textContent="";},1600);
+  }catch(e){$("savedMsg").textContent="保存できませんでした";syncMsg("同期エラー",false);}
+},500);}
+function showUpdated(){
+  const e=$("stUpdated"); if(!e) return;
+  if(!S.updatedAt){e.textContent="";return;}
+  const d=new Date(S.updatedAt);
+  e.textContent=`保存済み ・ 最終更新 ${d.getFullYear()}/${pad(d.getMonth()+1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+async function loadMonth(m){
+  curMonth=m;
+  const from=m+"-01", d=new Date(+m.slice(0,4),+m.slice(5,7),0);
+  const to=`${m}-${pad(d.getDate())}`;
+  try{
+    TBLS=await sb(`annex_tables?work_date=gte.${from}&work_date=lte.${to}&select=*&order=work_date.asc,created_at.asc`)||[];
+    const ds=await sb(`annex_days?work_date=gte.${from}&work_date=lte.${to}&select=*`)||[];
+    DAYS={}; ds.forEach(x=>DAYS[x.work_date]={hours:+x.hours,okuri:!!x.okuri});
+  }catch(e){TBLS=[];DAYS={};syncMsg("読み込みに失敗",false);}
+  renderMonthBar(); renderDays("days","mTitle","sTake","sPay","sCnt",true); renderAdmin();
+}
+
+/* ══════ 計算 ══════ */
+function calcTable(c,st){
+  const f=FLOORS[c.floor],units=1+c.ext*0.5,svc=f.svc+(c.late?0.10:0);
+  const setFee=8000*c.guests,extFee=4000*c.guests*c.ext;
+  const honFee=3000*c.honshimei*units,jonaiFee=3000*c.jonai*units,dohanFee=5000*c.dohan;
+  const roomFee=f.room?(20000+10000*c.ext):0,single=(f.room&&c.guests===1)?5000:0;
+  let order=0;const catNet={},mineNet={};
+  CATS.forEach(k=>{catNet[k]=0;mineNet[k]=0;});
+  (c.bill||[]).forEach(l=>{const a=l.price*l.qty;order+=a;catNet[l.cat]+=a;if(l.mine)mineNet[l.cat]+=a;});
+  const sub=setFee+extFee+honFee+jonaiFee+dohanFee+roomFee+single+order;
+  const svcFee=sub*svc,total=sub+svcFee,mul=(st.base==="gross")?(1+svc):1;
+
+  let shimeiBack=0,shimeiLabel="",shimeiPct=0;
+  if(c.role==="hon"&&c.honshimei>0){shimeiBack=3000*units*mul*(st.bkHon/100);shimeiLabel="本指名バック";shimeiPct=st.bkHon;}
+  else if(c.role==="jonai"&&c.jonai>0){shimeiBack=3000*units*mul*(st.bkJonai/100);shimeiLabel="場内指名バック";shimeiPct=st.bkJonai;}
+  const dohanBack=(c.dohan>0&&c.role!=="help")?5000*mul*(st.bkDohan/100):0;
+
+  let share=0,shareNote="";
+  if(st.attr==="self"){share=-1;shareNote="自分宛にした注文のみ";}
+  else if(st.attr==="hon"){
+    if(c.honshimei>0){share=(c.role==="hon")?1/c.honshimei:0;
+      shareNote=(c.role==="hon")?(c.honshimei>1?`本指名 ${c.honshimei}人で等分`:"本指名が総取り"):"本指名の子につくため0円";
+    }else{const n=c.jonai||1;share=(c.role==="jonai")?1/n:0;
+      shareNote=(c.role==="jonai")?`本指名なし・場内 ${n}人で等分`:"本指名も場内もなしのため0円";}
+  }else{const n=c.honshimei+c.jonai;share=(n>0&&c.role!=="help")?1/n:0;
+    shareNote=n>0?`指名 ${n}人で等分`:"指名者がいないため0円";}
+
+  let orderBack=0;const backLines=[];
+  CATS.forEach(k=>{const src=(share===-1)?mineNet[k]:catNet[k]*share;if(src<=0)return;
+    const b=src*mul*(st.bk[k]/100);orderBack+=b;backLines.push([MENU[k].label,src,st.bk[k],b]);});
+
+  return {f,units,setFee,extFee,honFee,jonaiFee,dohanFee,roomFee,single,order,sub,svcFee,total,
+    shimeiBack,shimeiLabel,shimeiPct,dohanBack,orderBack,backLines,
+    backTotal:shimeiBack+dohanBack+orderBack,shareNote};
+}
+function allTables(inc){return inc===false?TBLS:TBLS.concat(TEMP.filter(t=>t.work_date.slice(0,7)===curMonth));}
+function dayList(inc){const m={};allTables(inc).forEach(t=>{(m[t.work_date]=m[t.work_date]||[]).push(t);});
+  Object.keys(DAYS).forEach(d=>{if(!m[d])m[d]=[];});return m;}
+function calcDay(d,tl){
+  const back=tl.reduce((s,t)=>s+t.back,0),pay=tl.reduce((s,t)=>s+t.pay,0);
+  const rec=DAYS[d]||{hours:0,okuri:false};
+  const hours=rec.hours||0,okuri=!!rec.okuri;
+  const wage=S.hourly*hours,gross=back+wage;
+  const gensen=S.gensen?gross*0.1021:0;
+  const kousei=tl.length?S.kousei:0;
+  const okuriFee=okuri?S.okuri:0;
+  const fixed=kousei+okuriFee;
+  return {back,pay,hours,okuri,wage,gross,gensen,kousei,okuriFee,fixed,take:Math.max(0,gross-gensen-fixed)};
+}
+function calcMonth(inc){
+  const m=dayList(inc);let take=0,pay=0,tables=0,days=0;
+  Object.keys(m).forEach(d=>{const r=calcDay(d,m[d]);take+=r.take;pay+=r.pay;tables+=m[d].length;
+    if(m[d].length||(DAYS[d]&&DAYS[d].hours))days++;});
+  return {take,pay,tables,days};
+}
+
+/* ══════ 描画 ══════ */
+function render(){
+  const r=calcTable(C,S);
+  $("hPay").textContent=yen(r.total);
+  $("hPaySub").textContent=`${r.f.name}・${C.guests}名・${50+C.ext*25}分`;
+  $("hGet").textContent=yen(r.backTotal);
+  $("hGetSub").textContent=r.total>0?`支払いの ${(r.backTotal/r.total*100).toFixed(1)}%`:"";
+
+  const rt={hon:"卓の飲食売上のバックは本指名についてもらえます。",
+    jonai:"場内指名の場合、飲食売上のバックは本指名の子につくのが基本です。ルールは璃子シートで変えられます。",
+    help:"ヘルプは指名料も飲食バックも発生しない前提で計算しています。"};
+  $("roleMsg").innerHTML=`<b>${{hon:"本指名",jonai:"場内指名",help:"ヘルプ"}[C.role]}</b> ${rt[C.role]}`;
+
+  $("bill").innerHTML=C.bill.length===0?'<div class="empty" style="border:0">まだ何も入っていません</div>':
+    C.bill.map((l,i)=>`<div class="bl"><div class="nm">${l.name}${l.qty>1?` <span style="color:var(--muted)">×${l.qty}</span>`:""}</div>
+      <button class="tag" data-mine="${i}" aria-pressed="${l.mine}">璃子</button>
+      <div class="amt">¥${yen(l.price*l.qty)}</div><button class="del" data-del="${i}">×</button></div>`).join("");
+
+  const p=[["セット料 ¥8,000 × "+C.guests+"名",r.setFee]];
+  if(r.extFee)p.push([`延長 ¥4,000 × ${C.guests}名 × ${C.ext}回`,r.extFee]);
+  if(r.roomFee)p.push(["個室料",r.roomFee]);
+  if(r.single)p.push(["シングルチャージ",r.single]);
+  if(r.honFee)p.push([`本指名 ${C.honshimei}人 × ${r.units}単位`,r.honFee]);
+  if(r.jonaiFee)p.push([`場内指名 ${C.jonai}人 × ${r.units}単位`,r.jonaiFee]);
+  if(r.dohanFee)p.push([`同伴 ${C.dohan}人`,r.dohanFee]);
+  if(r.order)p.push(["飲食",r.order]);
+  $("bdPay").innerHTML=p.map(x=>`<div class="r"><span>${x[0]}</span><span>¥${yen(x[1])}</span></div>`).join("")
+    +`<div class="r sum"><span>小計</span><span>¥${yen(r.sub)}</span></div>`
+    +`<div class="r"><span>税＆サービス料 ${(r.f.svc*100)}%${C.late?" ＋深夜10%":""}</span><span>¥${yen(r.svcFee)}</span></div>`
+    +`<div class="r total"><span>お支払い</span><span>¥${yen(r.total)}</span></div>`
+    +(C.guests>1?`<div class="r dim"><span>1人あたり（${C.guests}名で割った場合）</span><span>¥${yen(r.total/C.guests)}</span></div>`:"");
+
+  const g=[];
+  if(r.shimeiBack)g.push([`${r.shimeiLabel} ${r.shimeiPct}%`,r.shimeiBack]);
+  if(r.dohanBack)g.push([`同伴バック ${S.bkDohan}%`,r.dohanBack]);
+  r.backLines.forEach(l=>g.push([`${l[0]} ¥${yen(l[1])} の ${l[2]}%`,l[3]]));
+  $("bdGet").innerHTML=`<div class="r dim"><span>飲食売上の帰属</span><span style="font-family:var(--sans);font-size:12px">${r.shareNote}</span></div>`
+    +(g.length?g.map(x=>`<div class="r"><span>${x[0]}</span><span>¥${yen(x[1])}</span></div>`).join("")
+      :`<div class="r dim"><span>この卓のバックはありません</span><span>¥0</span></div>`)
+    +`<div class="r total-j sum"><span>この卓のバック</span><span>¥${yen(r.backTotal)}</span></div>`;
+}
+
+function renderMonthBar(){
+  const m=calcMonth();
+  $("mLabel").textContent=`${Number(curMonth.slice(5,7))}月`;
+  $("mTake").textContent="¥"+yen(m.take);
+  $("mPay").textContent="¥"+yen(m.pay);
+}
+
+function renderDays(target,titleId,tk,py,ct,editable){
+  const [y,mo]=curMonth.split("-");
+  $(titleId).textContent=`${y}年 ${Number(mo)}月`;
+  const m=calcMonth(editable);
+  $(tk).textContent="¥"+yen(m.take); $(py).textContent="¥"+yen(m.pay);
+  $(ct).textContent=`${m.days} / ${m.tables}`;
+  if(editable) $("mNote").innerHTML=`時給 ¥${yen(S.hourly)} × その日の勤務時間。厚生費 ¥${yen(S.kousei)} は卓についた日に1回、送り代 ¥${yen(S.okuri)} は「送りを使った」にチェックした日だけ引きます。源泉10.21%は${S.gensen?"":"（今はオフ）"}その日の支給額にかけています。`;
+
+  const map=dayList(editable), ds=Object.keys(map).sort().reverse();
+  if(!ds.length){$(target).innerHTML='<div class="empty">この月の記録はまだありません</div>';return;}
+  $(target).innerHTML=ds.map(d=>{
+    const tl=map[d],r=calcDay(d,tl),dd=new Date(d+"T00:00:00"),wd="日月火水木金土"[dd.getDay()];
+    return `<div class="day">
+      <div class="dhead" data-day="${target}-${d}"><div class="d">${dd.getDate()}<span style="font-size:11px;color:var(--muted)">（${wd}）</span></div>
+      <div class="c">${tl.length}卓 ・ 支払 ¥${yen(r.pay)}</div><div class="a">¥${yen(r.take)}</div></div>
+      <div class="dbody hide" id="db-${target}-${d}">
+        ${tl.map(t=>`<div class="tline"><div class="n">${t.label}${t.temp?' <span class="tag" style="cursor:default">保存なし</span>':""}<small>${t.meta}</small></div>
+          <div class="p">${t.pay?"¥"+yen(t.pay):""}</div><div class="b">¥${yen(t.back)}</div>
+          ${editable?`<button class="x" data-rm="${t.id}"${t.temp?' data-temp="1"':""}>×</button>`:""}</div>`).join("")
+          ||'<div style="color:var(--muted);font-size:12px;padding:6px 0">卓の記録なし</div>'}
+        <div class="row" style="border-top:1px solid var(--line);margin-top:8px">
+          <div class="lab">この日の勤務時間</div>
+          ${editable?`<input type="number" class="w-num" value="${r.hours}" step="0.5" data-hours="${d}">`
+            :`<span style="font-family:var(--serif);font-size:16px">${r.hours}</span>`}<span class="suffix">時間</span></div>
+        <div class="row">
+          ${editable?`<label class="chk" style="flex:1;padding:0"><input type="checkbox" data-okuri="${d}" ${r.okuri?"checked":""}><span>送りを使った <small>終電で上がった日は外す</small></span></label>`
+            :`<div class="lab">送り</div><span style="font-family:var(--sans);font-size:13px;color:var(--muted)">${r.okuri?"使った":"なし"}</span>`}</div>
+        <div class="bd" style="margin-top:6px">
+          <div class="r"><span>卓のバック合計</span><span>¥${yen(r.back)}</span></div>
+          ${r.wage?`<div class="r"><span>時給分</span><span>¥${yen(r.wage)}</span></div>`:""}
+          ${r.kousei?`<div class="r dim"><span>厚生費</span><span>−¥${yen(r.kousei)}</span></div>`:""}
+          ${r.okuriFee?`<div class="r dim"><span>送り代</span><span>−¥${yen(r.okuriFee)}</span></div>`:""}
+          ${r.gensen?`<div class="r dim"><span>源泉徴収 10.21%</span><span>−¥${yen(r.gensen)}</span></div>`:""}
+          <div class="r total-j"><span>この日の手取り</span><span>¥${yen(r.take)}</span></div>
+        </div></div></div>`;
+  }).join("");
+}
+
+function renderAdmin(){
+  renderDays("aDays","aTitle","aTake","aPay","aCnt",false);  const L=[["時給",`¥${yen(S.hourly)}`],["本指名バック",S.bkHon+"%"],["場内指名バック",S.bkJonai+"%"],
+    ["同伴バック",S.bkDohan+"%"],["キャストドリンク",S.bk.cast+"%"],["ショット",S.bk.shot+"%"],
+    ["シャンパン",S.bk.champ+"%"],["ワイン",S.bk.wine+"%"],["焼酎・ウイスキー",S.bk.bottle+"%"],
+    ["フード",S.bk.food+"%"],["その他",S.bk.other+"%"],
+    ["計算のもと",S.base==="net"?"税サ抜き":"税サ込み"],
+    ["飲食売上の帰属",{hon:"本指名が総取り",split:"指名者で按分",self:"自分宛のみ"}[S.attr]],
+    ["厚生費",`¥${yen(S.kousei)}`],["送り代",`¥${yen(S.okuri)}`],["源泉徴収",S.gensen?"あり":"なし"],
+    ["パスコード",S.passHash?"設定あり":"未設定"]];
+  $("aStatus").innerHTML=L.map(x=>`<div class="r"><span>${x[0]}</span><span style="font-family:var(--sans);font-size:13px">${x[1]}</span></div>`).join("");
+}
+
+function fillStatusForm(){
+  $("s_bkHon").value=S.bkHon; $("s_bkJonai").value=S.bkJonai; $("s_bkDohan").value=S.bkDohan;
+  CATS.forEach(k=>$("s_bk_"+k).value=S.bk[k]);
+  $("s_kousei").value=S.kousei; $("s_okuri").value=S.okuri; $("s_gensen").checked=S.gensen;
+  [...$("segHourly").children].forEach(b=>b.setAttribute("aria-pressed",Number(b.dataset.h)===S.hourly));
+  [...$("segBase").children].forEach(b=>b.setAttribute("aria-pressed",b.dataset.b===S.base));
+  [...$("segAttr").children].forEach(b=>b.setAttribute("aria-pressed",b.dataset.a===S.attr));
+}
+
+/* ══════ メニュー生成 ══════ */
+$("menu").innerHTML=Object.keys(MENU).map(k=>`<details${k==="cast"?" open":""}>
+  <summary><span>${MENU[k].label}</span><span class="cnt">${MENU[k].items.length}</span></summary>
+  <div class="items">${MENU[k].items.map(([n,p],i)=>`<button class="item" data-add="${k}:${i}"><span class="nm">${n}</span><span class="pr">¥${yen(p)}</span></button>`).join("")}</div>
+</details>`).join("");
+
+/* ══════ 操作 ══════ */
+document.addEventListener("click",async e=>{
+  const t=e.target.closest("button, .dhead"); if(!t) return;
+
+  if(t.dataset.t){
+    document.querySelectorAll(".tab").forEach(b=>b.setAttribute("aria-selected",b===t));
+    $("p-check").classList.toggle("hide",t.dataset.t!=="check");
+    $("p-riko").classList.toggle("hide",t.dataset.t!=="riko");
+    $("p-admin").classList.toggle("hide",t.dataset.t!=="admin");
+    if(t.dataset.t==="riko"){
+      const need=!!S.passHash&&!unlocked;
+      $("gate").classList.toggle("hide",!need);
+      $("rikoBody").classList.toggle("hide",need);
+      if(!need){showUpdated();renderDays("days","mTitle","sTake","sPay","sCnt",true);}
+    }
+    if(t.dataset.t==="admin") renderAdmin();
+    window.scrollTo(0,0); return;
+  }
+  if(t.id==="gateGo"){
+    const h=await sha($("gateInput").value);
+    if(h===S.passHash){unlocked=true;LS.set("annex:unlocked",h);
+      $("gateInput").value="";$("gateMsg").textContent="";
+      $("gate").classList.add("hide");$("rikoBody").classList.remove("hide");
+      showUpdated(); renderDays("days","mTitle","sTake","sPay","sCnt",true);}
+    else $("gateMsg").textContent="パスコードが違います";
+    return;
+  }
+  if(t.id==="lockNow"){
+    LS.del("annex:unlocked"); unlocked=false;
+    $("gate").classList.remove("hide"); $("rikoBody").classList.add("hide");
+    window.scrollTo(0,0); return;
+  }
+  if(t.id==="pcSave"){
+    const v=$("pcInput").value.trim();
+    const h=v?await sha(v):null;
+    try{await sb("annex_status?id=eq.1",{method:"PATCH",body:JSON.stringify({pass_hash:h})});
+      S.passHash=h; unlocked=true;
+      if(h) LS.set("annex:unlocked",h); else LS.del("annex:unlocked");
+      LS.set("annex:status",JSON.stringify(S));
+      $("pcInput").value="";
+      $("pcMsg").textContent=h?"パスコードを設定しました。この端末では次回から入力なしで開けます":"パスコードを解除しました";
+      renderAdmin();
+    }catch(err){$("pcMsg").textContent="保存できませんでした";}
+    return;
+  }
+  if(t.dataset.f){C.floor=t.dataset.f;[...$("segFloor").children].forEach(b=>b.setAttribute("aria-pressed",b===t));render();return;}
+  if(t.dataset.r){C.role=t.dataset.r;[...$("segRole").children].forEach(b=>b.setAttribute("aria-pressed",b===t));
+    if(C.role==="hon"&&C.honshimei===0){C.honshimei=1;$("n-honshimei").textContent=1;}
+    if(C.role==="jonai"&&C.jonai===0){C.jonai=1;$("n-jonai").textContent=1;}
+    C.bill.forEach(l=>l.mine=(C.role==="hon"));render();return;}
+  if(t.dataset.d&&t.parentElement.dataset.step){
+    const k=t.parentElement.dataset.step,min=(k==="guests")?1:0;
+    C[k]=Math.max(min,C[k]+Number(t.dataset.d));$("n-"+k).textContent=C[k];render();return;}
+  if(t.dataset.add){const [cat,i]=t.dataset.add.split(":");const [name,price]=MENU[cat].items[i];
+    const hit=C.bill.find(l=>l.name===name);
+    if(hit)hit.qty++;else C.bill.push({cat,name,price,qty:1,mine:(C.role==="hon")});render();return;}
+  if(t.dataset.del!==undefined){C.bill.splice(Number(t.dataset.del),1);render();return;}
+  if(t.dataset.mine!==undefined){const l=C.bill[Number(t.dataset.mine)];l.mine=!l.mine;render();return;}
+  if(t.id==="clearBill"){C.bill=[];render();return;}
+  if(t.dataset.h){S.hourly=Number(t.dataset.h);[...$("segHourly").children].forEach(b=>b.setAttribute("aria-pressed",b===t));
+    saveStatusSoon();renderMonthBar();renderDays("days","mTitle","sTake","sPay","sCnt",true);return;}
+  if(t.dataset.b){S.base=t.dataset.b;[...$("segBase").children].forEach(b=>b.setAttribute("aria-pressed",b===t));saveStatusSoon();render();return;}
+  if(t.dataset.a){S.attr=t.dataset.a;[...$("segAttr").children].forEach(b=>b.setAttribute("aria-pressed",b===t));saveStatusSoon();render();return;}
+
+  if(t.id==="saveTable"){
+    const date=$("recDate").value||todayStr();
+    if(date.slice(0,7)!==curMonth) await loadMonth(date.slice(0,7));
+    const r=calcTable(C,S);
+    const n=TBLS.filter(x=>x.work_date===date).length;
+    const label=$("recLabel").value.trim()||`${n+1}卓目`;
+    try{
+      await sb("annex_tables",{method:"POST",body:JSON.stringify({
+        work_date:date,label,floor:C.floor,guests:C.guests,ext:C.ext,late:C.late,
+        honshimei:C.honshimei,jonai:C.jonai,dohan:C.dohan,role:C.role,bill:C.bill,
+        pay:Math.round(r.total),back:Math.round(r.backTotal),
+        meta:`${r.f.name}・${C.guests}名・${50+C.ext*25}分・${{hon:"本指名",jonai:"場内",help:"ヘルプ"}[C.role]}`})});
+      await loadMonth(date.slice(0,7));
+      $("recLabel").value="";
+      $("recMsg").textContent=`${date} に「${label}」を記録しました`; syncMsg("同期しました");
+      setTimeout(()=>{$("recMsg").textContent="";},2600);
+    }catch(err){$("recMsg").textContent="記録できませんでした： "+err.message;syncMsg("同期エラー",false);
+      if(/接続できません/.test(err.message)) offline(true,err.message);}
+    return;
+  }
+  if(t.id==="rkAdd"){
+    const date=$("rkDate").value||todayStr();
+    const back=Number($("rkBack").value)||0;
+    const label=$("rkLabel").value.trim()||"自分の卓";
+    if(back<=0){$("rkMsg").textContent="バック額を入れてください";return;}
+    if($("rkSave").checked){
+      try{
+        if(date.slice(0,7)!==curMonth) await loadMonth(date.slice(0,7));
+        await sb("annex_tables",{method:"POST",body:JSON.stringify({
+          work_date:date,label,pay:0,back:Math.round(back),source:"riko",meta:"自己記録"})});
+        await loadMonth(date.slice(0,7));
+        $("rkMsg").textContent=`${date} に保存しました`; syncMsg("同期しました");
+      }catch(err){$("rkMsg").textContent="保存できませんでした";syncMsg("同期エラー",false);}
+    }else{
+      TEMP.push({id:"tmp"+Date.now(),work_date:date,label,pay:0,back:Math.round(back),meta:"自己記録",temp:true});
+      $("rkMsg").textContent="保存せずに表示しています";
+    }
+    $("rkBack").value=""; $("rkLabel").value="";
+    renderMonthBar(); renderDays("days","mTitle","sTake","sPay","sCnt",true);
+    setTimeout(()=>{$("rkMsg").textContent="";},2600);
+    return;
+  }
+  if(t.dataset.rm){
+    if(t.dataset.temp){TEMP=TEMP.filter(x=>x.id!==t.dataset.rm);
+      renderMonthBar();renderDays("days","mTitle","sTake","sPay","sCnt",true);return;}
+    try{await sb(`annex_tables?id=eq.${t.dataset.rm}`,{method:"DELETE"});await loadMonth(curMonth);syncMsg("削除しました");}
+    catch(err){syncMsg("削除に失敗",false);} return;
+  }
+  if(t.dataset.mv){
+    const [y,mo]=curMonth.split("-").map(Number);
+    const d=new Date(y,mo-1+Number(t.dataset.mv),1);
+    await loadMonth(`${d.getFullYear()}-${pad(d.getMonth()+1)}`); return;
+  }
+  if(t.dataset.day){$("db-"+t.dataset.day).classList.toggle("hide");return;}
+});
+
+let hrT=null;
+async function saveDay(d){
+  const rec=DAYS[d]||{hours:0,okuri:false};
+  try{await sb("annex_days",{method:"POST",prefer:"resolution=merge-duplicates,return=representation",
+    body:JSON.stringify({work_date:d,hours:rec.hours,okuri:rec.okuri,updated_at:new Date().toISOString()})});
+    syncMsg("同期しました");}
+  catch(err){syncMsg("同期エラー",false);}
+}
+function refreshDay(d){
+  renderMonthBar();
+  const map=dayList(true), r=calcDay(d,map[d]||[]);
+  const head=document.querySelector(`.dhead[data-day="days-${d}"] .a`);
+  if(head) head.textContent="¥"+yen(r.take);
+  const m=calcMonth(true); $("sTake").textContent="¥"+yen(m.take);
+}
+document.addEventListener("input",e=>{
+  if(e.target.dataset.hours){
+    const d=e.target.dataset.hours;
+    DAYS[d]={...(DAYS[d]||{okuri:false}),hours:Number(e.target.value)||0};
+    clearTimeout(hrT); hrT=setTimeout(()=>saveDay(d),600);
+    refreshDay(d);
+  }
+});
+document.addEventListener("change",e=>{
+  if(e.target.dataset.okuri){
+    const d=e.target.dataset.okuri;
+    DAYS[d]={...(DAYS[d]||{hours:0}),okuri:e.target.checked};
+    saveDay(d);
+    renderDays("days","mTitle","sTake","sPay","sCnt",true);
+    const body=$("db-days-"+d); if(body) body.classList.remove("hide");
+  }
+});
+document.addEventListener("focusin",e=>{
+  if(e.target.matches("input[type=number]")){
+    e.target.setAttribute("inputmode","decimal");
+    setTimeout(()=>{try{e.target.select();}catch(_){}},0);
+  }
+});
+$("cLate").addEventListener("change",e=>{C.late=e.target.checked;render();});
+[["s_bkHon","bkHon"],["s_bkJonai","bkJonai"],["s_bkDohan","bkDohan"],["s_kousei","kousei"],["s_okuri","okuri"]]
+  .forEach(([id,k])=>$(id).addEventListener("input",e=>{S[k]=Number(e.target.value)||0;saveStatusSoon();render();renderMonthBar();}));
+CATS.forEach(k=>$("s_bk_"+k).addEventListener("input",e=>{S.bk[k]=Number(e.target.value)||0;saveStatusSoon();render();}));
+$("s_gensen").addEventListener("change",e=>{S.gensen=e.target.checked;saveStatusSoon();renderMonthBar();
+  renderDays("days","mTitle","sTake","sPay","sCnt",true);});
+
+(async()=>{
+  $("recDate").value=todayStr();
+  $("rkDate").value=todayStr();
+  await loadStatus();
+  await loadMonth(todayStr().slice(0,7));
+  render();
+  syncMsg("接続しました");
+})();
+</script>
+</body>
+</html>
