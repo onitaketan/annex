@@ -275,8 +275,12 @@
 
       <section style="margin-top:30px"><h2>時給<span class="note">先月の売上で決まるランク</span></h2>
         <div class="seg jade" id="segHourly">
-          <button data-h="3500">3,500</button><button data-h="4000">4,000</button><button data-h="4500">4,500</button>
-          <button data-h="5000">5,000</button><button data-h="5500">5,500</button><button data-h="6000">6,000</button>
+          <button data-h="4000">4,000</button><button data-h="4500">4,500</button><button data-h="5000">5,000</button>
+          <button data-h="5500">5,500</button><button data-h="6000">6,000</button>
+        </div>
+        <div class="card" style="margin-top:8px">
+          <div class="row" style="padding:0"><div class="lab">これ以外の額<small>6,000円超などはここに入れてください</small></div>
+            <input type="number" class="w-num" id="s_hourly" step="500"><span class="suffix">円</span></div>
         </div>
       </section>
 
@@ -291,9 +295,14 @@
       </section>
 
       <section><h2>指名・同伴のバック</h2><div class="card">
-        <div class="row"><div class="lab">本指名<small>指名料 ¥3,000 に対して</small></div><input type="number" class="w-pct" id="s_bkHon"><span class="suffix">%</span></div>
-        <div class="row"><div class="lab">場内指名<small>指名料 ¥3,000 に対して</small></div><input type="number" class="w-pct" id="s_bkJonai"><span class="suffix">%</span></div>
-        <div class="row"><div class="lab">同伴<small>同伴料 ¥5,000 に対して</small></div><input type="number" class="w-pct" id="s_bkDohan"><span class="suffix">%</span></div>
+        <div class="row"><div class="lab">本指名（リクエスト）<small>指名料 ¥3,000 に対して</small></div><input type="number" class="w-pct" id="s_bkHon"><span class="suffix">%</span></div>
+        <div class="row"><div class="lab">場内指名（ステイ）<small>率ではなく1件あたりの定額</small></div><input type="number" class="w-num" id="s_bkJonaiYen" step="500"><span class="suffix">円</span></div>
+        <div class="row"><div class="lab">同伴（アテンド）<small>同伴料 ¥5,000 に対して</small></div><input type="number" class="w-pct" id="s_bkDohan"><span class="suffix">%</span></div>
+      </div></section>
+
+      <section><h2>そのほかのバック<span class="note">定額で決まっているもの</span></h2><div class="card">
+        <div class="row"><div class="lab">延長バック<small>延長1回（25分）につき</small></div><input type="number" class="w-num" id="s_bkExtYen" step="500"><span class="suffix">円</span></div>
+        <div class="row"><div class="lab">個室バック<small>1SET（50分）につき。指名でついた卓のみ</small></div><input type="number" class="w-num" id="s_bkRoomYen" step="500"><span class="suffix">円</span></div>
       </div></section>
 
       <section><h2>売上のバック率</h2><div class="card">
@@ -407,7 +416,8 @@ const FLOORS={main:{name:"MAIN FLOOR",svc:.30,room:false},fvip:{name:"FLOOR VIP"
 const TAX=0.10;   /* 消費税。サービス料とは別に、小計＋サービス料の全体にかかる */
 const CATS=["cast","shot","champ","wine","bottle","food","other"];
 
-let S={hourly:3500,bkHon:50,bkJonai:50,bkDohan:50,bk:{cast:50,shot:30,champ:20,wine:10,bottle:10,food:0,other:0},
+let S={hourly:4000,bkHon:20,bkDohan:25,bkJonaiYen:1000,bkExtYen:1000,bkRoomYen:5000,
+  bk:{cast:10,shot:10,champ:20,wine:10,bottle:10,food:0,other:0},
   base:"net",attr:"hon",kousei:0,okuri:0,gensen:true,wageFrom:WAGE_FROM,wageTo:WAGE_TO};
 let C={floor:"main",guests:1,ext:0,late:false,honshimei:1,jonai:0,dohan:0,role:"hon",bill:[]};
 let TBLS=[],DAYS={},curMonth="",TEMP=[];
@@ -494,10 +504,15 @@ function calcTable(c,st){
   const svcFee=sub*svc, taxFee=(sub+svcFee)*TAX, total=sub+svcFee+taxFee;
   const mul=(st.base==="gross")?((1+svc)*(1+TAX)):1;
 
-  let shimeiBack=0,shimeiLabel="",shimeiPct=0;
-  if(c.role==="hon"&&c.honshimei>0){shimeiBack=3000*units*mul*(st.bkHon/100);shimeiLabel="本指名バック";shimeiPct=st.bkHon;}
-  else if(c.role==="jonai"&&c.jonai>0){shimeiBack=3000*units*mul*(st.bkJonai/100);shimeiLabel="場内指名バック";shimeiPct=st.bkJonai;}
+  /* 定額のバック（円で決まっているもの）には税サの掛け目をかけない */
+  let shimeiBack=0,shimeiLabel="";
+  if(c.role==="hon"&&c.honshimei>0){shimeiBack=3000*units*mul*(st.bkHon/100);
+    shimeiLabel=`本指名バック 指名料 ¥${yen(3000*units)} の ${st.bkHon}%`;}
+  else if(c.role==="jonai"&&c.jonai>0){shimeiBack=st.bkJonaiYen;
+    shimeiLabel=`場内指名バック（定額）`;}
   const dohanBack=(c.dohan>0&&c.role!=="help")?5000*mul*(st.bkDohan/100):0;
+  const extBack=(c.ext>0&&c.role!=="help")?st.bkExtYen*c.ext:0;
+  const roomBack=(f.room&&c.role!=="help")?st.bkRoomYen*units:0;
 
   let share=0,shareNote="";
   if(st.attr==="self"){share=-1;shareNote="自分宛にした注文のみ";}
@@ -513,9 +528,9 @@ function calcTable(c,st){
   CATS.forEach(k=>{const src=(share===-1)?mineNet[k]:catNet[k]*share;if(src<=0)return;
     const b=src*mul*(st.bk[k]/100);orderBack+=b;backLines.push([MENU[k].label,src,st.bk[k],b]);});
 
-  const backTotal=shimeiBack+dohanBack+orderBack;
+  const backTotal=shimeiBack+dohanBack+extBack+roomBack+orderBack;
   return {f,units,setFee,extFee,honFee,jonaiFee,dohanFee,roomFee,single,order,sub,svcFee,taxFee,total,
-    shimeiBack,shimeiLabel,shimeiPct,dohanBack,orderBack,backLines,
+    shimeiBack,shimeiLabel,dohanBack,extBack,roomBack,orderBack,backLines,
     backTotal,shareNote,stayMin,wageShare,take:backTotal+wageShare};
 }
 function allTables(inc){return inc===false?TBLS:TBLS.concat(TEMP.filter(t=>t.work_date.slice(0,7)===curMonth));}
@@ -594,8 +609,10 @@ function render(){
     +(C.guests>1?`<div class="r dim"><span>1人あたり（${C.guests}名で割った場合）</span><span>¥${yen(r.total/C.guests)}</span></div>`:"");
 
   const g=[];
-  if(r.shimeiBack)g.push([`${r.shimeiLabel} ${r.shimeiPct}%`,r.shimeiBack]);
-  if(r.dohanBack)g.push([`同伴バック ${S.bkDohan}%`,r.dohanBack]);
+  if(r.shimeiBack)g.push([r.shimeiLabel,r.shimeiBack]);
+  if(r.dohanBack)g.push([`同伴バック 同伴料 ¥${yen(5000*C.dohan)} の ${S.bkDohan}%`,r.dohanBack]);
+  if(r.extBack)g.push([`延長バック ¥${yen(S.bkExtYen)} × ${C.ext}回`,r.extBack]);
+  if(r.roomBack)g.push([`個室バック ¥${yen(S.bkRoomYen)} × ${r.units}SET`,r.roomBack]);
   r.backLines.forEach(l=>g.push([`${l[0]} ¥${yen(l[1])} の ${l[2]}%`,l[3]]));
   $("bdGet").innerHTML=`<div class="r dim"><span>飲食売上の帰属</span><span style="font-family:var(--sans);font-size:12px">${r.shareNote}</span></div>`
     +(g.length?g.map(x=>`<div class="r"><span>${x[0]}</span><span>¥${yen(x[1])}</span></div>`).join("")
@@ -625,7 +642,8 @@ function renderDays(target,titleId,tk,py,ct,editable){
     +`<div class="r"><span>卓の取り分合計</span><span>¥${yen(m.takeTotal)}</span></div>`
     +`<div class="r dim"><span>うち バック</span><span>¥${yen(m.back)}</span></div>`
     +`<div class="r dim"><span>うち 時給（卓についていた分）</span><span>¥${yen(m.stayWage)}</span></div>`
-    +`<div class="r"><span>待機などの時給</span><span>¥${yen(m.wage-m.stayWage)}</span></div>`;
+    +`<div class="r"><span>待機などの時給</span><span>¥${yen(m.wage-m.stayWage)}</span></div>`
+    +`<div class="r dim"><span>支払日<span style="font-family:var(--sans);font-size:11px">（月末締め・翌月20日・手渡し）</span></span><span>${payDay(curMonth)}</span></div>`;
   if(editable) $("mNote").innerHTML=`時給 ¥${yen(S.hourly)} × その日の実働時間（${S.wageFrom}〜${S.wageTo} に重なった分だけ）。厚生費 ¥${yen(S.kousei)} は卓についた日に1回、送り代 ¥${yen(S.okuri)} は「送りを使った」にチェックした日だけ引きます。源泉10.21%は${S.gensen?"":"（今はオフ）"}その日の支給額にかけています。`;
 
   const map=dayList(editable), ds=Object.keys(map).sort().reverse();
@@ -678,7 +696,8 @@ function renderDays(target,titleId,tk,py,ct,editable){
 }
 
 function fillStatusForm(){
-  $("s_bkHon").value=S.bkHon; $("s_bkJonai").value=S.bkJonai; $("s_bkDohan").value=S.bkDohan;
+  $("s_bkHon").value=S.bkHon; $("s_bkDohan").value=S.bkDohan; $("s_hourly").value=S.hourly;
+  $("s_bkJonaiYen").value=S.bkJonaiYen; $("s_bkExtYen").value=S.bkExtYen; $("s_bkRoomYen").value=S.bkRoomYen;
   CATS.forEach(k=>$("s_bk_"+k).value=S.bk[k]);
   $("s_kousei").value=S.kousei; $("s_okuri").value=S.okuri; $("s_gensen").checked=S.gensen;
   $("s_wfrom").value=S.wageFrom||WAGE_FROM; $("s_wto").value=S.wageTo||WAGE_TO;
@@ -735,8 +754,9 @@ document.addEventListener("click",async e=>{
   if(t.dataset.del!==undefined){C.bill.splice(Number(t.dataset.del),1);render();return;}
   if(t.dataset.mine!==undefined){const l=C.bill[Number(t.dataset.mine)];l.mine=!l.mine;render();return;}
   if(t.id==="clearBill"){C.bill=[];render();return;}
-  if(t.dataset.h){S.hourly=Number(t.dataset.h);[...$("segHourly").children].forEach(b=>b.setAttribute("aria-pressed",b===t));
-    saveStatusSoon();renderMonthBar();renderDays("days","mTitle","sTake","sPay","sCnt",true);return;}
+  if(t.dataset.h){S.hourly=Number(t.dataset.h);$("s_hourly").value=S.hourly;
+    [...$("segHourly").children].forEach(b=>b.setAttribute("aria-pressed",b===t));
+    saveStatusSoon();render();renderMonthBar();renderDays("days","mTitle","sTake","sPay","sCnt",true);return;}
   if(t.dataset.b){S.base=t.dataset.b;[...$("segBase").children].forEach(b=>b.setAttribute("aria-pressed",b===t));saveStatusSoon();render();return;}
   if(t.dataset.a){S.attr=t.dataset.a;[...$("segAttr").children].forEach(b=>b.setAttribute("aria-pressed",b===t));saveStatusSoon();render();return;}
 
@@ -890,8 +910,12 @@ document.addEventListener("focusin",e=>{
   }
 });
 $("cLate").addEventListener("change",e=>{C.late=e.target.checked;render();});
-[["s_bkHon","bkHon"],["s_bkJonai","bkJonai"],["s_bkDohan","bkDohan"],["s_kousei","kousei"],["s_okuri","okuri"]]
+[["s_bkHon","bkHon"],["s_bkDohan","bkDohan"],["s_bkJonaiYen","bkJonaiYen"],["s_bkExtYen","bkExtYen"],
+ ["s_bkRoomYen","bkRoomYen"],["s_kousei","kousei"],["s_okuri","okuri"]]
   .forEach(([id,k])=>$(id).addEventListener("input",e=>{S[k]=Number(e.target.value)||0;saveStatusSoon();render();renderMonthBar();}));
+$("s_hourly").addEventListener("input",e=>{S.hourly=Number(e.target.value)||0;
+  [...$("segHourly").children].forEach(b=>b.setAttribute("aria-pressed",Number(b.dataset.h)===S.hourly));
+  saveStatusSoon();render();renderMonthBar();renderDays("days","mTitle","sTake","sPay","sCnt",true);});
 CATS.forEach(k=>$("s_bk_"+k).addEventListener("input",e=>{S.bk[k]=Number(e.target.value)||0;saveStatusSoon();render();}));
 $("s_gensen").addEventListener("change",e=>{S.gensen=e.target.checked;saveStatusSoon();renderMonthBar();
   renderDays("days","mTitle","sTake","sPay","sCnt",true);});

@@ -80,13 +80,20 @@ function groupByDay(tables,dayRecs){
   return m;
 }
 
+/* 月末締め・翌月20日払い */
+function payDay(m){const[y,mo]=m.split("-").map(Number);
+  const d=new Date(y,mo,20);   /* mo は0始まりなので翌月になる */
+  return `${d.getMonth()+1}月20日`;}
+
 /* 行 → ステータス、ステータス → 行 */
-function statusFromRow(r){return{hourly:r.hourly,bkHon:+r.bk_hon,bkJonai:+r.bk_jonai,bkDohan:+r.bk_dohan,
+function statusFromRow(r){return{hourly:r.hourly,bkHon:+r.bk_hon,bkDohan:+r.bk_dohan,
+  bkJonaiYen:+r.bk_jonai_yen,bkExtYen:+r.bk_ext_yen,bkRoomYen:+r.bk_room_yen,
   bk:{cast:+r.bk_cast,shot:+r.bk_shot,champ:+r.bk_champ,wine:+r.bk_wine,bottle:+r.bk_bottle,food:+r.bk_food,other:+r.bk_other},
   base:r.base,attr:r.attr,kousei:r.kousei,okuri:r.okuri,gensen:r.gensen,
   wageFrom:(r.wage_from||WAGE_FROM).slice(0,5),wageTo:(r.wage_to||WAGE_TO).slice(0,5),
   updatedAt:r.updated_at};}
-function statusToRow(s){return{hourly:s.hourly,bk_hon:s.bkHon,bk_jonai:s.bkJonai,bk_dohan:s.bkDohan,
+function statusToRow(s){return{hourly:s.hourly,bk_hon:s.bkHon,bk_dohan:s.bkDohan,
+  bk_jonai_yen:s.bkJonaiYen,bk_ext_yen:s.bkExtYen,bk_room_yen:s.bkRoomYen,
   bk_cast:s.bk.cast,bk_shot:s.bk.shot,bk_champ:s.bk.champ,bk_wine:s.bk.wine,bk_bottle:s.bk.bottle,
   bk_food:s.bk.food,bk_other:s.bk.other,base:s.base,attr:s.attr,kousei:s.kousei,okuri:s.okuri,
   gensen:s.gensen,wage_from:s.wageFrom||WAGE_FROM,wage_to:s.wageTo||WAGE_TO,

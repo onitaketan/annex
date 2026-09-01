@@ -157,8 +157,9 @@ async function load(m){
       const st=sts.find(x=>x.cast_id===c.id);
       const recs={}; days.filter(d=>d.cast_id===c.id).forEach(d=>recs[d.work_date]=dayFromRow(d));
       const ts=tbls.filter(t=>t.cast_id===c.id);
-      const S=st?statusFromRow(st):{hourly:3500,bkHon:50,bkJonai:50,bkDohan:50,
-        bk:{cast:50,shot:30,champ:20,wine:10,bottle:10,food:0,other:0},
+      const S=st?statusFromRow(st):{hourly:4000,bkHon:20,bkDohan:25,
+        bkJonaiYen:1000,bkExtYen:1000,bkRoomYen:5000,
+        bk:{cast:10,shot:10,champ:20,wine:10,bottle:10,food:0,other:0},
         base:"net",attr:"hon",kousei:0,okuri:0,gensen:true,wageFrom:WAGE_FROM,wageTo:WAGE_TO};
       const map=groupByDay(ts,recs);
       BY[c.id]={cast:c,S,recs,tables:ts,map,month:calcMonth(map,recs,S),
@@ -197,7 +198,8 @@ function renderDetail(id){
     +`<div class="r"><span>卓の取り分合計</span><span>¥${yen(m.takeTotal)}</span></div>`
     +`<div class="r dim"><span>うち バック</span><span>¥${yen(m.back)}</span></div>`
     +`<div class="r dim"><span>うち 時給（卓についていた分）</span><span>¥${yen(m.stayWage)}</span></div>`
-    +`<div class="r"><span>待機などの時給</span><span>¥${yen(m.wage-m.stayWage)}</span></div>`;
+    +`<div class="r"><span>待機などの時給</span><span>¥${yen(m.wage-m.stayWage)}</span></div>`
+    +`<div class="r dim"><span>支払日<span style="font-family:var(--sans);font-size:11px">（月末締め・翌月20日・手渡し）</span></span><span>${payDay(curMonth)}</span></div>`;
 
   const ds=Object.keys(d.map).sort().reverse();
   $("aDays").innerHTML=ds.length?ds.map(dt=>{
@@ -225,8 +227,11 @@ function renderDetail(id){
         </div></div></div>`;}).join("")
     :'<div class="empty">この月の記録はまだありません</div>';
 
-  const L=[["時給",`¥${yen(S.hourly)}`],["時給の対象時間",`${S.wageFrom} 〜 ${S.wageTo}`],["本指名バック",S.bkHon+"%"],["場内指名バック",S.bkJonai+"%"],
-    ["同伴バック",S.bkDohan+"%"],["キャストドリンク",S.bk.cast+"%"],["ショット",S.bk.shot+"%"],
+  const L=[["時給",`¥${yen(S.hourly)}`],["時給の対象時間",`${S.wageFrom} 〜 ${S.wageTo}`],
+    ["本指名バック",S.bkHon+"%"],["場内指名バック",`¥${yen(S.bkJonaiYen)}（定額）`],
+    ["同伴バック",S.bkDohan+"%"],["延長バック",`¥${yen(S.bkExtYen)} / 1回`],
+    ["個室バック",`¥${yen(S.bkRoomYen)} / 1SET`],
+    ["キャストドリンク",S.bk.cast+"%"],["ショット",S.bk.shot+"%"],
     ["シャンパン",S.bk.champ+"%"],["ワイン",S.bk.wine+"%"],["焼酎・ウイスキー",S.bk.bottle+"%"],
     ["フード",S.bk.food+"%"],["その他",S.bk.other+"%"],
     ["バックのもと",S.base==="net"?"サービス料・税の前":"サービス料・税の後"],
