@@ -261,6 +261,22 @@
   <!-- ════════ 自分のシート ════════ -->
   <div id="p-riko" class="hide">
     <div id="rikoBody">
+      <section style="margin-top:4px">
+        <h2>出勤・退勤の打刻<span class="note">時給はここから計算されます</span></h2>
+        <div class="card">
+          <div class="row"><div class="lab">日付</div><input type="date" class="w-date" id="todDate"></div>
+          <div class="row"><div class="lab">出勤</div>
+            <div style="display:flex;gap:6px;flex:none;align-items:center">
+              <input type="time" class="w-time" id="todIn"><button class="tag" data-now="in">今</button></div></div>
+          <div class="row"><div class="lab">退勤<small>日をまたいでも大丈夫です</small></div>
+            <div style="display:flex;gap:6px;flex:none;align-items:center">
+              <input type="time" class="w-time" id="todOut"><button class="tag" data-now="out">今</button></div></div>
+          <div class="row"><div class="lab">実働時間<small id="todNote">出勤と退勤を入れると計算されます</small></div>
+            <span id="todHours" style="font-family:var(--serif);font-size:17px">0</span><span class="suffix">時間</span></div>
+        </div>
+        <div class="saved" id="todMsg"></div>
+      </section>
+
       <div class="mnav">
         <button data-mv="-1">‹</button><div class="t" id="mTitle">—</div><button data-mv="1">›</button>
       </div>
@@ -508,6 +524,7 @@ async function loadMonth(m){
     EDITS=ids.length?(await sb(`annex_table_edits?table_id=in.(${ids.join(",")})&select=*&order=changed_at.desc`)||[]):[];
   }catch(e){TBLS=[];DAYS={};EDITS=[];syncMsg("読み込みに失敗",false);}
   renderMonthBar(); renderDays("days","mTitle","sTake","sPay","sCnt",true);
+  if($("todDate").value) renderPunch();
 }
 
 /* ══════ 計算 ══════ */
@@ -594,6 +611,30 @@ function editPanel(t){
       ${es.map(e=>`<div class="r dim"><span style="font-family:var(--sans);font-size:11.5px;white-space:nowrap">${edWhen(e.changed_at)}</span><span style="font-family:var(--sans);font-size:11.5px;text-align:right;white-space:normal;line-height:1.45">${esc(edDiff(e))}</span></div>`).join("")}</div>`:""}
   </div>`;
 }
+/* 打刻カード。卓の記録がまだない日でも、ここから出退勤だけ先に入れられる */
+function renderPunch(){
+  const d=$("todDate").value||todayStr();
+  const rec=DAYS[d]||{hours:0,okuri:false,inT:"",outT:""};
+  $("todIn").value=rec.inT||""; $("todOut").value=rec.outT||"";
+  const r=calcDay(dayList(true)[d]||[],rec,S);
+  $("todHours").textContent=r.hours;
+  $("todNote").textContent=(r.auto!==null)
+    ?`拘束 ${hhmm(r.rawMin)} ・ ${S.wageFrom}〜${S.wageTo} に重なるのは ${hhmm(r.paid)} → 30分単位で切り捨て`
+    :"出勤と退勤を入れると計算されます";
+}
+async function savePunch(){
+  const d=$("todDate").value||todayStr();
+  if(d.slice(0,7)!==curMonth) await loadMonth(d.slice(0,7));
+  const rec={...(DAYS[d]||{hours:0,okuri:false,inT:"",outT:""}),
+    inT:$("todIn").value||"",outT:$("todOut").value||""};
+  const a=autoHours(rec,S); if(a!==null) rec.hours=a;
+  DAYS[d]=rec;
+  await saveDay(d);
+  $("todMsg").textContent="記録しました";
+  setTimeout(()=>{$("todMsg").textContent="";},1800);
+  renderPunch(); renderMonthBar(); renderDays("days","mTitle","sTake","sPay","sCnt",true);
+}
+
 function syncCheckForm(){
   ["guests","ext","honshimei","jonai","dohan"].forEach(k=>$("n-"+k).textContent=C[k]);
   $("cLate").checked=C.late;
@@ -758,7 +799,7 @@ document.addEventListener("click",async e=>{
     document.querySelectorAll(".tab").forEach(b=>b.setAttribute("aria-selected",b===t));
     $("p-check").classList.toggle("hide",t.dataset.t!=="check");
     $("p-riko").classList.toggle("hide",t.dataset.t!=="riko");
-    if(t.dataset.t==="riko"){showUpdated();renderDays("days","mTitle","sTake","sPay","sCnt",true);}
+    if(t.dataset.t==="riko"){showUpdated();renderPunch();renderDays("days","mTitle","sTake","sPay","sCnt",true);}
     window.scrollTo(0,0); return;
   }
   if(t.id==="cgGo"){ await gateGo(); return; }
@@ -777,6 +818,11 @@ document.addEventListener("click",async e=>{
       $("pcMsg").textContent=h?"パスコードを設定しました。この端末では次回から入力なしで開けます":"パスコードを解除しました";
     }catch(err){$("pcMsg").textContent="保存できませんでした";}
     return;
+  }
+  if(t.dataset.now){
+    const n=new Date();
+    $(t.dataset.now==="in"?"todIn":"todOut").value=`${pad(n.getHours())}:${pad(n.getMinutes())}`;
+    await savePunch(); return;
   }
   if(t.dataset.dl!==undefined){C.dohanLate=t.dataset.dl==="1";
     [...$("segDohanTime").children].forEach(b=>b.setAttribute("aria-pressed",b===t));render();return;}
@@ -926,6 +972,8 @@ document.addEventListener("input",e=>{
   }
 });
 document.addEventListener("change",e=>{
+  if(e.target.id==="todIn"||e.target.id==="todOut"){savePunch();return;}
+  if(e.target.id==="todDate"){renderPunch();return;}
   if(e.target.dataset.in!==undefined||e.target.dataset.out!==undefined){
     const isIn=e.target.dataset.in!==undefined;
     const d=isIn?e.target.dataset.in:e.target.dataset.out;
@@ -1021,8 +1069,10 @@ async function enterCast(c,unlockHash){
   $("tabMine").textContent=`${c.name}のシート`;
   $("recDate").value=todayStr();
   $("rkDate").value=todayStr();
+  $("todDate").value=todayStr();
   await loadStatus();
   await loadMonth(todayStr().slice(0,7));
+  renderPunch();
   render();
   syncMsg("接続しました");
 }
