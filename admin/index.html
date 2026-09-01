@@ -157,10 +157,10 @@ async function load(m){
       const st=sts.find(x=>x.cast_id===c.id);
       const recs={}; days.filter(d=>d.cast_id===c.id).forEach(d=>recs[d.work_date]=dayFromRow(d));
       const ts=tbls.filter(t=>t.cast_id===c.id);
-      const S=st?statusFromRow(st):{hourly:4000,bkHon:20,bkDohan:25,
-        bkJonaiYen:1000,bkExtYen:1000,bkRoomYen:5000,
-        bk:{cast:10,shot:10,champ:20,wine:10,bottle:10,food:0,other:0},
-        base:"net",attr:"hon",kousei:0,okuri:0,gensen:true,wageFrom:WAGE_FROM,wageTo:WAGE_TO};
+      const S=st?statusFromRow(st):{hourly:4000,bkHon:30,bkDohan:25,bkDohanLate:20,dohanAdd:true,
+        bkJonaiYen:1000,bkExtYen:0,bkRoomYen:5000,
+        bk:{cast:10,shot:10,champ:0,wine:0,bottle:0,food:0,other:0},
+        base:"net",attr:"hon",kousei:0,okuri:0,gensen:true,gensenPct:10.21,wageFrom:WAGE_FROM,wageTo:WAGE_TO};
       const map=groupByDay(ts,recs);
       BY[c.id]={cast:c,S,recs,tables:ts,map,month:calcMonth(map,recs,S),
         edits:edits.filter(e=>e.cast_id===c.id)};
@@ -222,21 +222,24 @@ function renderDetail(id){
           ${r.idleWage?`<div class="r"><span>${r.stayWage?"待機などの時給":"時給分"}</span><span>¥${yen(r.idleWage)}</span></div>`:""}
           ${r.kousei?`<div class="r dim"><span>厚生費</span><span>−¥${yen(r.kousei)}</span></div>`:""}
           ${r.okuriFee?`<div class="r dim"><span>送り代</span><span>−¥${yen(r.okuriFee)}</span></div>`:""}
-          ${r.gensen?`<div class="r dim"><span>源泉徴収 10.21%</span><span>−¥${yen(r.gensen)}</span></div>`:""}
+          ${r.gensen?`<div class="r dim"><span>源泉・所得税 ${r.gensenPct}%</span><span>−¥${yen(r.gensen)}</span></div>`:""}
           <div class="r total-j"><span>この日の手取り</span><span>¥${yen(r.take)}</span></div>
         </div></div></div>`;}).join("")
     :'<div class="empty">この月の記録はまだありません</div>';
 
   const L=[["時給",`¥${yen(S.hourly)}`],["時給の対象時間",`${S.wageFrom} 〜 ${S.wageTo}`],
-    ["本指名バック",S.bkHon+"%"],["場内指名バック",`¥${yen(S.bkJonaiYen)}（定額）`],
-    ["同伴バック",S.bkDohan+"%"],["延長バック",`¥${yen(S.bkExtYen)} / 1回`],
-    ["個室バック",`¥${yen(S.bkRoomYen)} / 1SET`],
-    ["キャストドリンク",S.bk.cast+"%"],["ショット",S.bk.shot+"%"],
+    ["本指名バック",`小計の ${S.bkHon}%`],
+    ["同伴バック",`小計の ${S.bkDohan}% / ${S.bkDohanLate}%（22時以降）`],
+    ["同伴バックの扱い",S.dohanAdd===false?"本指名バックの代わり":"本指名バックに加算"],
+    ["場内指名バック",`¥${yen(S.bkJonaiYen)} / 60分`],
+    ["個室バック",`¥${yen(S.bkRoomYen)} / 60分`],
+    ["延長バック",S.bkExtYen?`¥${yen(S.bkExtYen)} / 1回`:"なし"],
+    ["ドリンク等（フリー席のみ）",""],["キャストドリンク",S.bk.cast+"%"],["ショット",S.bk.shot+"%"],
     ["シャンパン",S.bk.champ+"%"],["ワイン",S.bk.wine+"%"],["焼酎・ウイスキー",S.bk.bottle+"%"],
     ["フード",S.bk.food+"%"],["その他",S.bk.other+"%"],
     ["バックのもと",S.base==="net"?"サービス料・税の前":"サービス料・税の後"],
     ["飲食売上の帰属",{hon:"本指名が総取り",split:"指名者で按分",self:"自分宛のみ"}[S.attr]],
-    ["厚生費",`¥${yen(S.kousei)}`],["送り代",`¥${yen(S.okuri)}`],["源泉徴収",S.gensen?"あり":"なし"],
+    ["厚生費",`¥${yen(S.kousei)}`],["送り代",`¥${yen(S.okuri)}`],["源泉・所得税",S.gensen?`${S.gensenPct}%`:"なし"],
     ["パスコード",d.cast.pass_hash?"設定あり":"未設定"]];
   $("aStatus").innerHTML=L.map(x=>`<div class="r"><span>${x[0]}</span><span style="font-family:var(--sans);font-size:13px">${x[1]}</span></div>`).join("");
 

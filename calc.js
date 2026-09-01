@@ -31,6 +31,9 @@ function paidMin(rec,st){
 function autoHours(rec,st){const mn=paidMin(rec,st); if(mn===null)return null;
   return Math.floor(mn/ROUND_MIN)*ROUND_MIN/60;}
 
+/* 60分ごとの定額バック用。50分でも1回ぶんとして数え、以後は満60分ごと */
+function hourUnits(min){return Math.max(1,Math.floor(min/60));}
+
 /* 卓の滞在時間。基本50分＋延長25分×回数。自己記録は卓ではないので0 */
 function tableMin(t){return (t.source==="riko"||t.temp)?0:50+(t.ext||0)*25;}
 
@@ -51,11 +54,12 @@ function calcDay(tl,rec,st){
   const wageF=stayWageRaw>0?stayWage/stayWageRaw:0;
   const tableTake=t=>t.back+st.hourly*tableMin(t)/60*wageF;
   const takeTotal=tl.reduce((s,t)=>s+tableTake(t),0);
-  const gensen=st.gensen?gross*0.1021:0;
+  const gensenPct=(st.gensenPct==null?10.21:st.gensenPct);
+  const gensen=st.gensen?gross*(gensenPct/100):0;
   const kousei=tl.length?st.kousei:0;
   const okuriFee=okuri?st.okuri:0;
   const fixed=kousei+okuriFee;
-  return {back,pay,hours,okuri,wage,gross,gensen,kousei,okuriFee,fixed,
+  return {back,pay,hours,okuri,wage,gross,gensen,gensenPct,kousei,okuriFee,fixed,
     inT,outT,rawMin,paid,auto,stayMin,rate,stayWage,idleWage,tableTake,takeTotal,
     wageF,
     take:Math.max(0,gross-gensen-fixed)};
@@ -87,16 +91,20 @@ function payDay(m){const[y,mo]=m.split("-").map(Number);
 
 /* 行 → ステータス、ステータス → 行 */
 function statusFromRow(r){return{hourly:r.hourly,bkHon:+r.bk_hon,bkDohan:+r.bk_dohan,
+  bkDohanLate:(r.bk_dohan_late==null?20:+r.bk_dohan_late),dohanAdd:r.dohan_add!==false,
   bkJonaiYen:+r.bk_jonai_yen,bkExtYen:+r.bk_ext_yen,bkRoomYen:+r.bk_room_yen,
   bk:{cast:+r.bk_cast,shot:+r.bk_shot,champ:+r.bk_champ,wine:+r.bk_wine,bottle:+r.bk_bottle,food:+r.bk_food,other:+r.bk_other},
   base:r.base,attr:r.attr,kousei:r.kousei,okuri:r.okuri,gensen:r.gensen,
+  gensenPct:(r.gensen_pct==null?10.21:+r.gensen_pct),
   wageFrom:(r.wage_from||WAGE_FROM).slice(0,5),wageTo:(r.wage_to||WAGE_TO).slice(0,5),
   updatedAt:r.updated_at};}
 function statusToRow(s){return{hourly:s.hourly,bk_hon:s.bkHon,bk_dohan:s.bkDohan,
+  bk_dohan_late:(s.bkDohanLate==null?20:s.bkDohanLate),dohan_add:s.dohanAdd!==false,
   bk_jonai_yen:s.bkJonaiYen,bk_ext_yen:s.bkExtYen,bk_room_yen:s.bkRoomYen,
   bk_cast:s.bk.cast,bk_shot:s.bk.shot,bk_champ:s.bk.champ,bk_wine:s.bk.wine,bk_bottle:s.bk.bottle,
   bk_food:s.bk.food,bk_other:s.bk.other,base:s.base,attr:s.attr,kousei:s.kousei,okuri:s.okuri,
-  gensen:s.gensen,wage_from:s.wageFrom||WAGE_FROM,wage_to:s.wageTo||WAGE_TO,
+  gensen:s.gensen,gensen_pct:(s.gensenPct==null?10.21:s.gensenPct),
+  wage_from:s.wageFrom||WAGE_FROM,wage_to:s.wageTo||WAGE_TO,
   updated_at:new Date().toISOString()};}
 function dayFromRow(x){return{hours:+x.hours,okuri:!!x.okuri,
   inT:(x.in_time||"").slice(0,5),outT:(x.out_time||"").slice(0,5)};}

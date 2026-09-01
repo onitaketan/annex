@@ -212,6 +212,10 @@
           <div class="step" data-step="jonai"><button data-d="-1">−</button><div class="n" id="n-jonai">0</div><button data-d="1">＋</button></div></div>
         <div class="row"><div class="lab">同伴<small>1人あたり ¥5,000</small></div>
           <div class="step" data-step="dohan"><button data-d="-1">−</button><div class="n" id="n-dohan">0</div><button data-d="1">＋</button></div></div>
+        <div class="row hide" id="rowDohanTime"><div class="lab">同伴の来店<small>時間帯でバック率が変わります</small></div>
+          <div class="seg jade" id="segDohanTime" style="flex:none;width:186px">
+            <button data-dl="0" aria-pressed="true">22時まで</button><button data-dl="1" aria-pressed="false">22時以降</button>
+          </div></div>
       </div>
     </section>
 
@@ -277,6 +281,7 @@
         <div class="seg jade" id="segHourly">
           <button data-h="4000">4,000</button><button data-h="4500">4,500</button><button data-h="5000">5,000</button>
           <button data-h="5500">5,500</button><button data-h="6000">6,000</button>
+          <button data-h="6500">6,500</button><button data-h="7000">7,000</button>
         </div>
         <div class="card" style="margin-top:8px">
           <div class="row" style="padding:0"><div class="lab">これ以外の額<small>6,000円超などはここに入れてください</small></div>
@@ -295,17 +300,27 @@
       </section>
 
       <section><h2>指名・同伴のバック</h2><div class="card">
-        <div class="row"><div class="lab">本指名（リクエスト）<small>指名料 ¥3,000 に対して</small></div><input type="number" class="w-pct" id="s_bkHon"><span class="suffix">%</span></div>
-        <div class="row"><div class="lab">場内指名（ステイ）<small>率ではなく1件あたりの定額</small></div><input type="number" class="w-num" id="s_bkJonaiYen" step="500"><span class="suffix">円</span></div>
-        <div class="row"><div class="lab">同伴（アテンド）<small>同伴料 ¥5,000 に対して</small></div><input type="number" class="w-pct" id="s_bkDohan"><span class="suffix">%</span></div>
+        <div class="row"><div class="lab">本指名（リクエスト）<small>卓の小計に対して</small></div><input type="number" class="w-pct" id="s_bkHon"><span class="suffix">%</span></div>
+        <div class="row"><div class="lab">同伴・22時まで<small>卓の小計に対して</small></div><input type="number" class="w-pct" id="s_bkDohan"><span class="suffix">%</span></div>
+        <div class="row"><div class="lab">同伴・22時以降<small>卓の小計に対して</small></div><input type="number" class="w-pct" id="s_bkDohanLate"><span class="suffix">%</span></div>
+        <div style="padding:10px 0 4px;border-top:1px solid var(--line)">
+          <div style="font-size:13px;margin-bottom:4px">同伴バックの扱い</div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:9px">本指名でついた卓に同伴がある場合</div>
+          <div class="seg jade" id="segDohanAdd"><button data-da="1">本指名バックに足す</button><button data-da="0">本指名バックの代わり</button></div>
+        </div>
       </div></section>
 
-      <section><h2>そのほかのバック<span class="note">定額で決まっているもの</span></h2><div class="card">
-        <div class="row"><div class="lab">延長バック<small>延長1回（25分）につき</small></div><input type="number" class="w-num" id="s_bkExtYen" step="500"><span class="suffix">円</span></div>
-        <div class="row"><div class="lab">個室バック<small>1SET（50分）につき。指名でついた卓のみ</small></div><input type="number" class="w-num" id="s_bkRoomYen" step="500"><span class="suffix">円</span></div>
-      </div></section>
+      <section><h2>時間で決まるバック<span class="note">60分ごとの定額</span></h2><div class="card">
+        <div class="row"><div class="lab">場内指名（ステイ）<small>60分ごと</small></div><input type="number" class="w-num" id="s_bkJonaiYen" step="500"><span class="suffix">円</span></div>
+        <div class="row"><div class="lab">個室バック<small>60分ごと。指名でついた卓のみ</small></div><input type="number" class="w-num" id="s_bkRoomYen" step="500"><span class="suffix">円</span></div>
+        <div class="row"><div class="lab">延長バック<small>延長1回（25分）につき。求人票に記載がないため0</small></div><input type="number" class="w-num" id="s_bkExtYen" step="500"><span class="suffix">円</span></div>
+      </div>
+      <div class="msg" style="margin-top:10px">50分の卓は1時間ぶんとして数え、そのあとは満60分ごとに1回ぶん増やしています（100分なら1回、120分なら2回）。</div>
+      </section>
 
-      <section><h2>売上のバック率</h2><div class="card">
+      <section><h2>売上のバック率<span class="note">フリー席のみ</span></h2>
+      <div class="msg" style="margin-bottom:10px">指名でついた卓は、飲食のバックが<b>本指名の小計バックに含まれる</b>ため、ここの率は使いません。ヘルプ（フリー席）でついた卓だけに使います。</div>
+      <div class="card">
         <div class="row"><div class="lab">キャストドリンク<small>レディースドリンク・ミモザ等</small></div><input type="number" class="w-pct" id="s_bk_cast"><span class="suffix">%</span></div>
         <div class="row"><div class="lab">ショット</div><input type="number" class="w-pct" id="s_bk_shot"><span class="suffix">%</span></div>
         <div class="row"><div class="lab">シャンパン</div><input type="number" class="w-pct" id="s_bk_champ"><span class="suffix">%</span></div>
@@ -331,7 +346,9 @@
       <section><h2>差し引かれるもの</h2><div class="card">
         <div class="row"><div class="lab">厚生費など<small>卓についた日に1回</small></div><input type="number" class="w-num" id="s_kousei" step="500"><span class="suffix">円</span></div>
         <div class="row"><div class="lab">送り代<small>1回あたり。使った日だけ引きます</small></div><input type="number" class="w-num" id="s_okuri" step="500"><span class="suffix">円</span></div>
-        <div class="row"><label class="chk" style="flex:1;padding:0"><input type="checkbox" id="s_gensen"><span>源泉徴収 10.21% を引く <small>業務委託の場合</small></span></label></div>
+        <div class="row"><label class="chk" style="flex:1;padding:0"><input type="checkbox" id="s_gensen"><span>源泉・所得税を引く</span></label></div>
+        <div class="row"><div class="lab">その率<small>業務委託の源泉なら 10.21%。お店が「所得税10%」と言うなら 10</small></div>
+          <input type="number" class="w-pct" id="s_gensenPct" step="0.01"><span class="suffix">%</span></div>
       </div></section>
 
       <section>
@@ -416,10 +433,11 @@ const FLOORS={main:{name:"MAIN FLOOR",svc:.30,room:false},fvip:{name:"FLOOR VIP"
 const TAX=0.10;   /* 消費税。サービス料とは別に、小計＋サービス料の全体にかかる */
 const CATS=["cast","shot","champ","wine","bottle","food","other"];
 
-let S={hourly:4000,bkHon:20,bkDohan:25,bkJonaiYen:1000,bkExtYen:1000,bkRoomYen:5000,
-  bk:{cast:10,shot:10,champ:20,wine:10,bottle:10,food:0,other:0},
-  base:"net",attr:"hon",kousei:0,okuri:0,gensen:true,wageFrom:WAGE_FROM,wageTo:WAGE_TO};
-let C={floor:"main",guests:1,ext:0,late:false,honshimei:1,jonai:0,dohan:0,role:"hon",bill:[]};
+let S={hourly:4000,bkHon:30,bkDohan:25,bkDohanLate:20,dohanAdd:true,
+  bkJonaiYen:1000,bkExtYen:0,bkRoomYen:5000,
+  bk:{cast:10,shot:10,champ:0,wine:0,bottle:0,food:0,other:0},
+  base:"net",attr:"hon",kousei:0,okuri:0,gensen:true,gensenPct:10.21,wageFrom:WAGE_FROM,wageTo:WAGE_TO};
+let C={floor:"main",guests:1,ext:0,late:false,honshimei:1,jonai:0,dohan:0,dohanLate:false,role:"hon",bill:[]};
 let TBLS=[],DAYS={},curMonth="",TEMP=[];
 let CAST=null;          /* {id,name,pass_hash} ログイン中の人 */
 let EDITS=[];           /* 表示中の月の修正履歴 */
@@ -504,15 +522,7 @@ function calcTable(c,st){
   const svcFee=sub*svc, taxFee=(sub+svcFee)*TAX, total=sub+svcFee+taxFee;
   const mul=(st.base==="gross")?((1+svc)*(1+TAX)):1;
 
-  /* 定額のバック（円で決まっているもの）には税サの掛け目をかけない */
-  let shimeiBack=0,shimeiLabel="";
-  if(c.role==="hon"&&c.honshimei>0){shimeiBack=3000*units*mul*(st.bkHon/100);
-    shimeiLabel=`本指名バック 指名料 ¥${yen(3000*units)} の ${st.bkHon}%`;}
-  else if(c.role==="jonai"&&c.jonai>0){shimeiBack=st.bkJonaiYen;
-    shimeiLabel=`場内指名バック（定額）`;}
-  const dohanBack=(c.dohan>0&&c.role!=="help")?5000*mul*(st.bkDohan/100):0;
-  const extBack=(c.ext>0&&c.role!=="help")?st.bkExtYen*c.ext:0;
-  const roomBack=(f.room&&c.role!=="help")?st.bkRoomYen*units:0;
+  const stayMin2=50+c.ext*25, hUnits=hourUnits(stayMin2);
 
   let share=0,shareNote="";
   if(st.attr==="self"){share=-1;shareNote="自分宛にした注文のみ";}
@@ -524,13 +534,34 @@ function calcTable(c,st){
   }else{const n=c.honshimei+c.jonai;share=(n>0&&c.role!=="help")?1/n:0;
     shareNote=n>0?`指名 ${n}人で等分`:"指名者がいないため0円";}
 
+  /* ── 小計バック方式 ──
+     本指名は卓の小計に率をかける。場内・個室は60分ごとの定額（税サの掛け目はかけない）。
+     飲食の個別バックはフリー席（ヘルプ）のときだけ。指名席のぶんは小計バックに含まれる。 */
+  const dohanPct=c.dohanLate?st.bkDohanLate:st.bkDohan;
+  let shimeiBack=0,shimeiLabel="",dohanBack=0;
+  if(c.role==="hon"&&c.honshimei>0){
+    const honPart=sub*mul*(st.bkHon/100)*(share===-1?1:share);
+    dohanBack=(c.dohan>0)?sub*mul*(dohanPct/100):0;
+    if(dohanBack&&st.dohanAdd===false){shimeiBack=0;}
+    else {shimeiBack=honPart; shimeiLabel=`本指名バック 小計 ¥${yen(sub)} の ${st.bkHon}%`
+      +(share!==-1&&share<1?`（${c.honshimei}人で等分）`:"");}
+  }else if(c.role==="jonai"&&c.jonai>0){
+    shimeiBack=st.bkJonaiYen*hUnits;
+    shimeiLabel=`場内指名バック ¥${yen(st.bkJonaiYen)} × ${hUnits}時間`;
+  }
+  const extBack=(c.ext>0&&c.role!=="help")?st.bkExtYen*c.ext:0;
+  const roomBack=(f.room&&c.role!=="help")?st.bkRoomYen*hUnits:0;
+
   let orderBack=0;const backLines=[];
-  CATS.forEach(k=>{const src=(share===-1)?mineNet[k]:catNet[k]*share;if(src<=0)return;
-    const b=src*mul*(st.bk[k]/100);orderBack+=b;backLines.push([MENU[k].label,src,st.bk[k],b]);});
+  if(c.role==="help"){
+    CATS.forEach(k=>{const src=(share===-1)?mineNet[k]:catNet[k];if(src<=0)return;
+      const b=src*mul*(st.bk[k]/100);if(!b)return;
+      orderBack+=b;backLines.push([MENU[k].label,src,st.bk[k],b]);});
+  }
 
   const backTotal=shimeiBack+dohanBack+extBack+roomBack+orderBack;
   return {f,units,setFee,extFee,honFee,jonaiFee,dohanFee,roomFee,single,order,sub,svcFee,taxFee,total,
-    shimeiBack,shimeiLabel,dohanBack,extBack,roomBack,orderBack,backLines,
+    shimeiBack,shimeiLabel,dohanBack,dohanPct,extBack,roomBack,orderBack,backLines,hUnits,
     backTotal,shareNote,stayMin,wageShare,take:backTotal+wageShare};
 }
 function allTables(inc){return inc===false?TBLS:TBLS.concat(TEMP.filter(t=>t.work_date.slice(0,7)===curMonth));}
@@ -564,6 +595,7 @@ function editPanel(t){
 function syncCheckForm(){
   ["guests","ext","honshimei","jonai","dohan"].forEach(k=>$("n-"+k).textContent=C[k]);
   $("cLate").checked=C.late;
+  [...$("segDohanTime").children].forEach(b=>b.setAttribute("aria-pressed",(b.dataset.dl==="1")===!!C.dohanLate));
   [...$("segFloor").children].forEach(b=>b.setAttribute("aria-pressed",b.dataset.f===C.floor));
   [...$("segRole").children].forEach(b=>b.setAttribute("aria-pressed",b.dataset.r===C.role));
   render();
@@ -583,11 +615,12 @@ function render(){
   $("hGet").textContent=yen(r.take);
   $("hGetSub").textContent=`バック ¥${yen(r.backTotal)} ＋ 時給 ¥${yen(r.wageShare)}`;
 
-  const rt={hon:"卓の飲食売上のバックは本指名についてもらえます。",
-    jonai:"場内指名の場合、飲食売上のバックは本指名の子につくのが基本です。ルールは自分のシートで変えられます。",
-    help:"ヘルプは指名料も飲食バックも発生しない前提で計算しています。"};
+  const rt={hon:`卓の小計に ${S.bkHon}% がバックとしてつきます。ドリンクやボトルの個別バックは、この小計バックに含まれるため別途つきません。`,
+    jonai:`場内指名は60分ごとに ¥${yen(S.bkJonaiYen)} の定額です。飲食のバックはつきません。`,
+    help:"フリー席あつかいなので、ドリンクのバックだけがつきます。指名料や小計のバックはつきません。"};
   $("roleMsg").innerHTML=`<b>${{hon:"本指名",jonai:"場内指名",help:"ヘルプ"}[C.role]}</b> ${rt[C.role]}`;
 
+  $("rowDohanTime").classList.toggle("hide",!(C.dohan>0));
   $("bill").innerHTML=C.bill.length===0?'<div class="empty" style="border:0">まだ何も入っていません</div>':
     C.bill.map((l,i)=>`<div class="bl"><div class="nm">${l.name}${l.qty>1?` <span style="color:var(--muted)">×${l.qty}</span>`:""}</div>
       <button class="tag" data-mine="${i}" aria-pressed="${l.mine}">自分</button>
@@ -610,9 +643,9 @@ function render(){
 
   const g=[];
   if(r.shimeiBack)g.push([r.shimeiLabel,r.shimeiBack]);
-  if(r.dohanBack)g.push([`同伴バック 同伴料 ¥${yen(5000*C.dohan)} の ${S.bkDohan}%`,r.dohanBack]);
+  if(r.dohanBack)g.push([`同伴バック 小計 ¥${yen(r.sub)} の ${r.dohanPct}%（${C.dohanLate?"22時以降":"22時まで"}）`,r.dohanBack]);
   if(r.extBack)g.push([`延長バック ¥${yen(S.bkExtYen)} × ${C.ext}回`,r.extBack]);
-  if(r.roomBack)g.push([`個室バック ¥${yen(S.bkRoomYen)} × ${r.units}SET`,r.roomBack]);
+  if(r.roomBack)g.push([`個室バック ¥${yen(S.bkRoomYen)} × ${r.hUnits}時間`,r.roomBack]);
   r.backLines.forEach(l=>g.push([`${l[0]} ¥${yen(l[1])} の ${l[2]}%`,l[3]]));
   $("bdGet").innerHTML=`<div class="r dim"><span>飲食売上の帰属</span><span style="font-family:var(--sans);font-size:12px">${r.shareNote}</span></div>`
     +(g.length?g.map(x=>`<div class="r"><span>${x[0]}</span><span>¥${yen(x[1])}</span></div>`).join("")
@@ -644,7 +677,7 @@ function renderDays(target,titleId,tk,py,ct,editable){
     +`<div class="r dim"><span>うち 時給（卓についていた分）</span><span>¥${yen(m.stayWage)}</span></div>`
     +`<div class="r"><span>待機などの時給</span><span>¥${yen(m.wage-m.stayWage)}</span></div>`
     +`<div class="r dim"><span>支払日<span style="font-family:var(--sans);font-size:11px">（月末締め・翌月20日・手渡し）</span></span><span>${payDay(curMonth)}</span></div>`;
-  if(editable) $("mNote").innerHTML=`時給 ¥${yen(S.hourly)} × その日の実働時間（${S.wageFrom}〜${S.wageTo} に重なった分だけ）。厚生費 ¥${yen(S.kousei)} は卓についた日に1回、送り代 ¥${yen(S.okuri)} は「送りを使った」にチェックした日だけ引きます。源泉10.21%は${S.gensen?"":"（今はオフ）"}その日の支給額にかけています。`;
+  if(editable) $("mNote").innerHTML=`時給 ¥${yen(S.hourly)} × その日の実働時間（${S.wageFrom}〜${S.wageTo} に重なった分だけ）。厚生費 ¥${yen(S.kousei)} は卓についた日に1回、送り代 ¥${yen(S.okuri)} は「送りを使った」にチェックした日だけ引きます。源泉・所得税 ${S.gensenPct}% は${S.gensen?"":"（今はオフ）"}その日の支給額にかけています。`;
 
   const map=dayList(editable), ds=Object.keys(map).sort().reverse();
   if(!ds.length){$(target).innerHTML='<div class="empty">この月の記録はまだありません</div>';return;}
@@ -689,7 +722,7 @@ function renderDays(target,titleId,tk,py,ct,editable){
           ${(r.stayMin&&r.wageF<0.999)?`<div class="r dim"><span style="font-size:11.5px;line-height:1.45">卓についた時間の合計が時給の対象時間より長いので、時給は対象時間ぶんを卓ごとの時間で按分しています</span><span></span></div>`:""}
           ${r.kousei?`<div class="r dim"><span>厚生費</span><span>−¥${yen(r.kousei)}</span></div>`:""}
           ${r.okuriFee?`<div class="r dim"><span>送り代</span><span>−¥${yen(r.okuriFee)}</span></div>`:""}
-          ${r.gensen?`<div class="r dim"><span>源泉徴収 10.21%</span><span>−¥${yen(r.gensen)}</span></div>`:""}
+          ${r.gensen?`<div class="r dim"><span>源泉・所得税 ${r.gensenPct}%</span><span>−¥${yen(r.gensen)}</span></div>`:""}
           <div class="r total-j"><span>この日の手取り</span><span>¥${yen(r.take)}</span></div>
         </div></div></div>`;
   }).join("");
@@ -698,8 +731,11 @@ function renderDays(target,titleId,tk,py,ct,editable){
 function fillStatusForm(){
   $("s_bkHon").value=S.bkHon; $("s_bkDohan").value=S.bkDohan; $("s_hourly").value=S.hourly;
   $("s_bkJonaiYen").value=S.bkJonaiYen; $("s_bkExtYen").value=S.bkExtYen; $("s_bkRoomYen").value=S.bkRoomYen;
+  $("s_bkDohanLate").value=S.bkDohanLate;
+  [...$("segDohanAdd").children].forEach(b=>b.setAttribute("aria-pressed",(b.dataset.da==="1")===(S.dohanAdd!==false)));
   CATS.forEach(k=>$("s_bk_"+k).value=S.bk[k]);
   $("s_kousei").value=S.kousei; $("s_okuri").value=S.okuri; $("s_gensen").checked=S.gensen;
+  $("s_gensenPct").value=(S.gensenPct==null?10.21:S.gensenPct);
   $("s_wfrom").value=S.wageFrom||WAGE_FROM; $("s_wto").value=S.wageTo||WAGE_TO;
   [...$("segHourly").children].forEach(b=>b.setAttribute("aria-pressed",Number(b.dataset.h)===S.hourly));
   [...$("segBase").children].forEach(b=>b.setAttribute("aria-pressed",b.dataset.b===S.base));
@@ -740,6 +776,10 @@ document.addEventListener("click",async e=>{
     }catch(err){$("pcMsg").textContent="保存できませんでした";}
     return;
   }
+  if(t.dataset.dl!==undefined){C.dohanLate=t.dataset.dl==="1";
+    [...$("segDohanTime").children].forEach(b=>b.setAttribute("aria-pressed",b===t));render();return;}
+  if(t.dataset.da!==undefined){S.dohanAdd=t.dataset.da==="1";
+    [...$("segDohanAdd").children].forEach(b=>b.setAttribute("aria-pressed",b===t));saveStatusSoon();render();return;}
   if(t.dataset.f){C.floor=t.dataset.f;[...$("segFloor").children].forEach(b=>b.setAttribute("aria-pressed",b===t));render();return;}
   if(t.dataset.r){C.role=t.dataset.r;[...$("segRole").children].forEach(b=>b.setAttribute("aria-pressed",b===t));
     if(C.role==="hon"&&C.honshimei===0){C.honshimei=1;$("n-honshimei").textContent=1;}
@@ -768,7 +808,7 @@ document.addEventListener("click",async e=>{
     const n=TBLS.filter(x=>x.work_date===date).length;
     const label=$("recLabel").value.trim()||(EDIT?EDIT.before.label:`${n+1}卓目`);
     const row={cast_id:CAST.id,work_date:date,label,floor:C.floor,guests:C.guests,ext:C.ext,late:C.late,
-      honshimei:C.honshimei,jonai:C.jonai,dohan:C.dohan,role:C.role,bill:C.bill,
+      honshimei:C.honshimei,jonai:C.jonai,dohan:C.dohan,dohan_late:C.dohanLate,role:C.role,bill:C.bill,
       pay:Math.round(r.total),back:Math.round(r.backTotal),
       meta:`${r.f.name}・${C.guests}名・${50+C.ext*25}分・${{hon:"本指名",jonai:"場内",help:"ヘルプ"}[C.role]}`};
     try{
@@ -815,8 +855,8 @@ document.addEventListener("click",async e=>{
   if(t.dataset.edload){
     const row=TBLS.find(x=>x.id===t.dataset.edload); if(!row) return;
     C={floor:row.floor||"main",guests:row.guests||1,ext:row.ext||0,late:!!row.late,
-       honshimei:row.honshimei||0,jonai:row.jonai||0,dohan:row.dohan||0,role:row.role||"hon",
-       bill:Array.isArray(row.bill)?JSON.parse(JSON.stringify(row.bill)):[]};
+       honshimei:row.honshimei||0,jonai:row.jonai||0,dohan:row.dohan||0,dohanLate:!!row.dohan_late,
+       role:row.role||"hon",bill:Array.isArray(row.bill)?JSON.parse(JSON.stringify(row.bill)):[]};
     EDIT={id:row.id,before:{work_date:row.work_date,label:row.label,pay:row.pay,back:row.back}};
     $("recDate").value=row.work_date; $("recLabel").value=row.label;
     syncCheckForm(); showEditState();
@@ -910,8 +950,8 @@ document.addEventListener("focusin",e=>{
   }
 });
 $("cLate").addEventListener("change",e=>{C.late=e.target.checked;render();});
-[["s_bkHon","bkHon"],["s_bkDohan","bkDohan"],["s_bkJonaiYen","bkJonaiYen"],["s_bkExtYen","bkExtYen"],
- ["s_bkRoomYen","bkRoomYen"],["s_kousei","kousei"],["s_okuri","okuri"]]
+[["s_bkHon","bkHon"],["s_bkDohan","bkDohan"],["s_bkDohanLate","bkDohanLate"],["s_bkJonaiYen","bkJonaiYen"],["s_bkExtYen","bkExtYen"],
+ ["s_bkRoomYen","bkRoomYen"],["s_kousei","kousei"],["s_okuri","okuri"],["s_gensenPct","gensenPct"]]
   .forEach(([id,k])=>$(id).addEventListener("input",e=>{S[k]=Number(e.target.value)||0;saveStatusSoon();render();renderMonthBar();}));
 $("s_hourly").addEventListener("input",e=>{S.hourly=Number(e.target.value)||0;
   [...$("segHourly").children].forEach(b=>b.setAttribute("aria-pressed",Number(b.dataset.h)===S.hourly));
