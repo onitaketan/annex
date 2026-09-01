@@ -319,7 +319,9 @@
       </section>
 
       <section><h2>売上のバック率<span class="note">フリー席のみ</span></h2>
-      <div class="msg" style="margin-bottom:10px">指名でついた卓は、飲食のバックが<b>本指名の小計バックに含まれる</b>ため、ここの率は使いません。ヘルプ（フリー席）でついた卓だけに使います。</div>
+      <div class="msg" style="margin-bottom:10px">
+        本指名でついた卓は、ドリンクのバックが<b>小計バックの中に含まれています</b>（別に足しません）。ここの率は、ヘルプ（フリー席）でついた卓にだけ使います。
+      </div>
       <div class="card">
         <div class="row"><div class="lab">キャストドリンク<small>レディースドリンク・ミモザ等</small></div><input type="number" class="w-pct" id="s_bk_cast"><span class="suffix">%</span></div>
         <div class="row"><div class="lab">ショット</div><input type="number" class="w-pct" id="s_bk_shot"><span class="suffix">%</span></div>
@@ -435,7 +437,7 @@ const CATS=["cast","shot","champ","wine","bottle","food","other"];
 
 let S={hourly:4000,bkHon:30,bkDohan:25,bkDohanLate:20,dohanAdd:true,
   bkJonaiYen:1000,bkExtYen:0,bkRoomYen:5000,
-  bk:{cast:10,shot:10,champ:0,wine:0,bottle:0,food:0,other:0},
+  bk:{cast:10,shot:10,champ:20,wine:10,bottle:10,food:0,other:0},
   base:"net",attr:"hon",kousei:0,okuri:0,gensen:true,gensenPct:10.21,wageFrom:WAGE_FROM,wageTo:WAGE_TO};
 let C={floor:"main",guests:1,ext:0,late:false,honshimei:1,jonai:0,dohan:0,dohanLate:false,role:"hon",bill:[]};
 let TBLS=[],DAYS={},curMonth="",TEMP=[];

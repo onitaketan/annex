@@ -159,7 +159,7 @@ async function load(m){
       const ts=tbls.filter(t=>t.cast_id===c.id);
       const S=st?statusFromRow(st):{hourly:4000,bkHon:30,bkDohan:25,bkDohanLate:20,dohanAdd:true,
         bkJonaiYen:1000,bkExtYen:0,bkRoomYen:5000,
-        bk:{cast:10,shot:10,champ:0,wine:0,bottle:0,food:0,other:0},
+        bk:{cast:10,shot:10,champ:20,wine:10,bottle:10,food:0,other:0},
         base:"net",attr:"hon",kousei:0,okuri:0,gensen:true,gensenPct:10.21,wageFrom:WAGE_FROM,wageTo:WAGE_TO};
       const map=groupByDay(ts,recs);
       BY[c.id]={cast:c,S,recs,tables:ts,map,month:calcMonth(map,recs,S),
