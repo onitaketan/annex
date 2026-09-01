@@ -44,13 +44,14 @@
   .row .lab{flex:1;min-width:0;font-size:14px}
   .row .lab small{display:block;color:var(--muted);font-size:11px;line-height:1.4}
 
-  input[type=number],input[type=date],input[type=text],input[type=password]{
+  input[type=number],input[type=date],input[type=text],input[type=password],input[type=time]{
     background:var(--panel2);border:1px solid var(--line);color:var(--text);
     font-family:var(--sans);font-size:15px;border-radius:7px;padding:9px 10px;width:100%;
     -webkit-appearance:none;appearance:none;
   }
   input[type=number]{text-align:right;font-family:var(--serif);font-size:16px}
   input.w-num{width:96px;flex:none} input.w-pct{width:84px;flex:none} input.w-date{width:158px;flex:none}
+  input.w-time{width:118px;flex:none;text-align:center;font-family:var(--serif);font-size:15px;padding:9px 4px}
   input.w-text{width:136px;flex:none}
   .suffix{color:var(--muted);font-size:12px;margin-left:-6px}
 
@@ -256,6 +257,7 @@
         <div class="stat g"><div class="k">お店の売上</div><div class="v" id="sPay">¥0</div></div>
         <div class="stat"><div class="k">出勤 / 卓数</div><div class="v" id="sCnt">0 / 0</div></div>
       </div>
+      <div class="card bd" id="mSum" style="margin-top:8px"></div>
       <div class="msg j" style="margin-top:8px" id="mNote"></div>
       <div style="display:flex;align-items:center;gap:10px;margin-top:8px">
         <div style="flex:1;font-size:11px;color:var(--jade)" id="stUpdated"></div>
@@ -348,6 +350,7 @@
       <div class="stat g"><div class="k">支払い合計</div><div class="v" id="aPay">¥0</div></div>
       <div class="stat"><div class="k">出勤 / 卓数</div><div class="v" id="aCnt">0 / 0</div></div>
     </div>
+    <div class="card bd" id="aSum" style="margin-top:8px"></div>
     <div class="msg" style="margin-top:8px">保存されている記録だけを集計しています。璃子ちゃんが保存しない選択をした分は含まれないため、月の合計が実際の手取りと一致するとは限りません。</div>
     <div id="aDays" style="margin-top:14px"></div>
     <section style="margin-top:26px">
@@ -462,7 +465,8 @@ async function loadMonth(m){
   try{
     TBLS=await sb(`annex_tables?work_date=gte.${from}&work_date=lte.${to}&select=*&order=work_date.asc,created_at.asc`)||[];
     const ds=await sb(`annex_days?work_date=gte.${from}&work_date=lte.${to}&select=*`)||[];
-    DAYS={}; ds.forEach(x=>DAYS[x.work_date]={hours:+x.hours,okuri:!!x.okuri});
+    DAYS={}; ds.forEach(x=>DAYS[x.work_date]={hours:+x.hours,okuri:!!x.okuri,
+      inT:(x.in_time||"").slice(0,5),outT:(x.out_time||"").slice(0,5)});
   }catch(e){TBLS=[];DAYS={};syncMsg("読み込みに失敗",false);}
   renderMonthBar(); renderDays("days","mTitle","sTake","sPay","sCnt",true); renderAdmin();
 }
@@ -505,22 +509,39 @@ function calcTable(c,st){
 function allTables(inc){return inc===false?TBLS:TBLS.concat(TEMP.filter(t=>t.work_date.slice(0,7)===curMonth));}
 function dayList(inc){const m={};allTables(inc).forEach(t=>{(m[t.work_date]=m[t.work_date]||[]).push(t);});
   Object.keys(DAYS).forEach(d=>{if(!m[d])m[d]=[];});return m;}
+/* 出退勤 → 実働時間。日跨ぎ対応。ROUND_MIN 単位で切り捨て */
+const ROUND_MIN=30;
+function hhmm(n){const h=Math.floor(n/60),m=n%60;return h?`${h}時間${m?m+"分":""}`:`${m}分`;}
+function spanMin(a,b){if(!a||!b)return null;
+  const p=s=>{const[h,m]=s.split(":").map(Number);return h*60+(m||0);};
+  let d=p(b)-p(a); if(d<0)d+=1440; return d;}
+function autoHours(rec){const mn=spanMin(rec.inT,rec.outT); if(mn===null)return null;
+  return Math.floor(mn/ROUND_MIN)*ROUND_MIN/60;}
+/* 卓の滞在時間。基本50分＋延長25分×回数。自己記録は卓ではないので0 */
+function tableMin(t){return (t.source==="riko"||t.temp)?0:50+(t.ext||0)*25;}
+
 function calcDay(d,tl){
   const back=tl.reduce((s,t)=>s+t.back,0),pay=tl.reduce((s,t)=>s+t.pay,0);
-  const rec=DAYS[d]||{hours:0,okuri:false};
-  const hours=rec.hours||0,okuri=!!rec.okuri;
+  const rec=DAYS[d]||{hours:0,okuri:false,inT:"",outT:""};
+  const inT=rec.inT||"",outT=rec.outT||"";
+  const rawMin=spanMin(inT,outT),auto=autoHours(rec);
+  const hours=(auto!==null)?auto:(rec.hours||0),okuri=!!rec.okuri;
+  const stayMin=tl.reduce((s,t)=>s+tableMin(t),0);
+  const rate=(rawMin&&stayMin)?Math.min(100,Math.round(stayMin/rawMin*100)):null;
   const wage=S.hourly*hours,gross=back+wage;
   const gensen=S.gensen?gross*0.1021:0;
   const kousei=tl.length?S.kousei:0;
   const okuriFee=okuri?S.okuri:0;
   const fixed=kousei+okuriFee;
-  return {back,pay,hours,okuri,wage,gross,gensen,kousei,okuriFee,fixed,take:Math.max(0,gross-gensen-fixed)};
+  return {back,pay,hours,okuri,wage,gross,gensen,kousei,okuriFee,fixed,
+    inT,outT,rawMin,auto,stayMin,rate,take:Math.max(0,gross-gensen-fixed)};
 }
 function calcMonth(inc){
-  const m=dayList(inc);let take=0,pay=0,tables=0,days=0;
+  const m=dayList(inc);let take=0,pay=0,tables=0,days=0,hours=0,wage=0,back=0,stayMin=0;
   Object.keys(m).forEach(d=>{const r=calcDay(d,m[d]);take+=r.take;pay+=r.pay;tables+=m[d].length;
-    if(m[d].length||(DAYS[d]&&DAYS[d].hours))days++;});
-  return {take,pay,tables,days};
+    hours+=r.hours;wage+=r.wage;back+=r.back;stayMin+=r.stayMin;
+    if(m[d].length||(DAYS[d]&&(DAYS[d].hours||DAYS[d].inT)))days++;});
+  return {take,pay,tables,days,hours,wage,back,stayMin};
 }
 
 /* ══════ 描画 ══════ */
@@ -562,7 +583,8 @@ function render(){
   $("bdGet").innerHTML=`<div class="r dim"><span>飲食売上の帰属</span><span style="font-family:var(--sans);font-size:12px">${r.shareNote}</span></div>`
     +(g.length?g.map(x=>`<div class="r"><span>${x[0]}</span><span>¥${yen(x[1])}</span></div>`).join("")
       :`<div class="r dim"><span>この卓のバックはありません</span><span>¥0</span></div>`)
-    +`<div class="r total-j sum"><span>この卓のバック</span><span>¥${yen(r.backTotal)}</span></div>`;
+    +`<div class="r total-j sum"><span>この卓のバック</span><span>¥${yen(r.backTotal)}</span></div>`
+    +`<div class="r dim"><span>時間あたり（滞在 ${50+C.ext*25}分 で換算）</span><span>¥${yen(r.backTotal/((50+C.ext*25)/60))}</span></div>`;
 }
 
 function renderMonthBar(){
@@ -578,6 +600,11 @@ function renderDays(target,titleId,tk,py,ct,editable){
   const m=calcMonth(editable);
   $(tk).textContent="¥"+yen(m.take); $(py).textContent="¥"+yen(m.pay);
   $(ct).textContent=`${m.days} / ${m.tables}`;
+  const sum=$(editable?"mSum":"aSum");
+  if(sum) sum.innerHTML=`<div class="r"><span>勤務時間の合計</span><span>${m.hours}時間</span></div>`
+    +`<div class="r"><span>うち卓についた時間</span><span>${m.stayMin?hhmm(m.stayMin):"—"}</span></div>`
+    +`<div class="r"><span>時給分</span><span>¥${yen(m.wage)}</span></div>`
+    +`<div class="r"><span>卓のバック分</span><span>¥${yen(m.back)}</span></div>`;
   if(editable) $("mNote").innerHTML=`時給 ¥${yen(S.hourly)} × その日の勤務時間。厚生費 ¥${yen(S.kousei)} は卓についた日に1回、送り代 ¥${yen(S.okuri)} は「送りを使った」にチェックした日だけ引きます。源泉10.21%は${S.gensen?"":"（今はオフ）"}その日の支給額にかけています。`;
 
   const map=dayList(editable), ds=Object.keys(map).sort().reverse();
@@ -588,20 +615,30 @@ function renderDays(target,titleId,tk,py,ct,editable){
       <div class="dhead" data-day="${target}-${d}"><div class="d">${dd.getDate()}<span style="font-size:11px;color:var(--muted)">（${wd}）</span></div>
       <div class="c">${tl.length}卓 ・ 支払 ¥${yen(r.pay)}</div><div class="a">¥${yen(r.take)}</div></div>
       <div class="dbody hide" id="db-${target}-${d}">
-        ${tl.map(t=>`<div class="tline"><div class="n">${t.label}${t.temp?' <span class="tag" style="cursor:default">保存なし</span>':""}<small>${t.meta}</small></div>
+        ${tl.map(t=>{const mn=tableMin(t),ph=mn?t.back/(mn/60):0;
+          return `<div class="tline"><div class="n">${t.label}${t.temp?' <span class="tag" style="cursor:default">保存なし</span>':""}<small>${t.meta}</small>${mn?`<small>滞在 ${hhmm(mn)} ・ 時間あたり ¥${yen(ph)}</small>`:""}</div>
           <div class="p">${t.pay?"¥"+yen(t.pay):""}</div><div class="b">¥${yen(t.back)}</div>
-          ${editable?`<button class="x" data-rm="${t.id}"${t.temp?' data-temp="1"':""}>×</button>`:""}</div>`).join("")
+          ${editable?`<button class="x" data-rm="${t.id}"${t.temp?' data-temp="1"':""}>×</button>`:""}</div>`;}).join("")
           ||'<div style="color:var(--muted);font-size:12px;padding:6px 0">卓の記録なし</div>'}
         <div class="row" style="border-top:1px solid var(--line);margin-top:8px">
-          <div class="lab">この日の勤務時間</div>
-          ${editable?`<input type="number" class="w-num" value="${r.hours}" step="0.5" data-hours="${d}">`
+          <div class="lab" style="white-space:nowrap">出勤・退勤</div>
+          ${editable?`<div style="display:flex;align-items:center;gap:6px;flex:none">
+              <input type="time" class="w-time" value="${r.inT}" data-in="${d}">
+              <span style="color:var(--muted)">→</span>
+              <input type="time" class="w-time" value="${r.outT}" data-out="${d}"></div>`
+            :`<span style="font-family:var(--serif);font-size:15px">${r.inT&&r.outT?`${r.inT} → ${r.outT}`:"—"}</span>`}</div>
+        <div class="row">
+          <div class="lab">実働時間<small>${r.auto!==null?`拘束 ${hhmm(r.rawMin)} を30分単位で切り捨て`:"出退勤を入れると自動で計算します。日をまたいでも大丈夫です"}</small></div>
+          ${(editable&&r.auto===null)?`<input type="number" class="w-num" value="${r.hours}" step="0.5" data-hours="${d}">`
             :`<span style="font-family:var(--serif);font-size:16px">${r.hours}</span>`}<span class="suffix">時間</span></div>
+        ${r.stayMin?`<div class="row"><div class="lab">うち卓についた時間${r.rate!==null?`<small>拘束時間の ${r.rate}%</small>`:""}</div>
+          <span style="font-family:var(--serif);font-size:16px">${hhmm(r.stayMin)}</span></div>`:""}
         <div class="row">
           ${editable?`<label class="chk" style="flex:1;padding:0"><input type="checkbox" data-okuri="${d}" ${r.okuri?"checked":""}><span>送りを使った <small>終電で上がった日は外す</small></span></label>`
             :`<div class="lab">送り</div><span style="font-family:var(--sans);font-size:13px;color:var(--muted)">${r.okuri?"使った":"なし"}</span>`}</div>
         <div class="bd" style="margin-top:6px">
           <div class="r"><span>卓のバック合計</span><span>¥${yen(r.back)}</span></div>
-          ${r.wage?`<div class="r"><span>時給分</span><span>¥${yen(r.wage)}</span></div>`:""}
+          ${r.wage?`<div class="r"><span>時給分 ¥${yen(S.hourly)} × ${r.hours}時間</span><span>¥${yen(r.wage)}</span></div>`:""}
           ${r.kousei?`<div class="r dim"><span>厚生費</span><span>−¥${yen(r.kousei)}</span></div>`:""}
           ${r.okuriFee?`<div class="r dim"><span>送り代</span><span>−¥${yen(r.okuriFee)}</span></div>`:""}
           ${r.gensen?`<div class="r dim"><span>源泉徴収 10.21%</span><span>−¥${yen(r.gensen)}</span></div>`:""}
@@ -735,7 +772,7 @@ document.addEventListener("click",async e=>{
         $("rkMsg").textContent=`${date} に保存しました`; syncMsg("同期しました");
       }catch(err){$("rkMsg").textContent="保存できませんでした";syncMsg("同期エラー",false);}
     }else{
-      TEMP.push({id:"tmp"+Date.now(),work_date:date,label,pay:0,back:Math.round(back),meta:"自己記録",temp:true});
+      TEMP.push({id:"tmp"+Date.now(),work_date:date,label,pay:0,back:Math.round(back),meta:"自己記録",source:"riko",temp:true});
       $("rkMsg").textContent="保存せずに表示しています";
     }
     $("rkBack").value=""; $("rkLabel").value="";
@@ -759,9 +796,10 @@ document.addEventListener("click",async e=>{
 
 let hrT=null;
 async function saveDay(d){
-  const rec=DAYS[d]||{hours:0,okuri:false};
+  const rec=DAYS[d]||{hours:0,okuri:false,inT:"",outT:""};
   try{await sb("annex_days",{method:"POST",prefer:"resolution=merge-duplicates,return=representation",
-    body:JSON.stringify({work_date:d,hours:rec.hours,okuri:rec.okuri,updated_at:new Date().toISOString()})});
+    body:JSON.stringify({work_date:d,hours:rec.hours,okuri:rec.okuri,
+      in_time:rec.inT||null,out_time:rec.outT||null,updated_at:new Date().toISOString()})});
     syncMsg("同期しました");}
   catch(err){syncMsg("同期エラー",false);}
 }
@@ -781,6 +819,17 @@ document.addEventListener("input",e=>{
   }
 });
 document.addEventListener("change",e=>{
+  if(e.target.dataset.in!==undefined||e.target.dataset.out!==undefined){
+    const isIn=e.target.dataset.in!==undefined;
+    const d=isIn?e.target.dataset.in:e.target.dataset.out;
+    const rec={...(DAYS[d]||{hours:0,okuri:false,inT:"",outT:""})};
+    rec[isIn?"inT":"outT"]=e.target.value;
+    const a=autoHours(rec); if(a!==null) rec.hours=a;
+    DAYS[d]=rec; saveDay(d);
+    renderMonthBar(); renderDays("days","mTitle","sTake","sPay","sCnt",true);
+    const body=$("db-days-"+d); if(body) body.classList.remove("hide");
+    return;
+  }
   if(e.target.dataset.okuri){
     const d=e.target.dataset.okuri;
     DAYS[d]={...(DAYS[d]||{hours:0}),okuri:e.target.checked};
