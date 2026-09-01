@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ANNEX 管理</title>
+<style>
+  :root{
+    --bg:#17161B; --panel:#201F26; --panel2:#25242C; --line:#33323C;
+    --gold:#C4AE73; --jade:#8FB3A2; --text:#E9E6DE; --muted:#8B8679;
+    --serif:"Hiragino Mincho ProN","Yu Mincho","YuMincho","Noto Serif JP",serif;
+    --sans:"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic","Noto Sans JP",system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.6;padding-bottom:60px}
+  .wrap{max-width:640px;margin:0 auto;padding:0 14px}
+  .top{position:sticky;top:0;z-index:20;background:var(--bg);border-bottom:1px solid var(--line)}
+  .top-in{max-width:640px;margin:0 auto;padding:13px 14px;display:flex;align-items:baseline;gap:10px}
+  .top .t{font-family:var(--serif);font-size:19px}
+  .top .s{font-size:11px;color:var(--muted)}
+  .top .sync{margin-left:auto;font-size:10.5px;color:var(--jade)}
+
+  h2{font-family:var(--serif);font-size:15px;font-weight:600;margin:26px 0 10px;letter-spacing:.02em}
+  h2 .note{font-family:var(--sans);font-size:11px;color:var(--muted);font-weight:400;margin-left:8px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px}
+  .msg{border:1px solid var(--line);border-left:2px solid var(--gold);background:var(--panel);border-radius:0 9px 9px 0;padding:12px 14px;font-size:12.5px;color:var(--muted);line-height:1.65;margin:14px 0}
+  .msg b{color:var(--text);font-weight:600}
+  .empty{padding:22px 14px;text-align:center;color:var(--muted);font-size:13px;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
+
+  .mnav{display:flex;align-items:center;gap:10px;margin:14px 0}
+  .mnav button{width:40px;height:40px;background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:8px;font-size:16px;cursor:pointer}
+  .mnav .t{flex:1;text-align:center;font-family:var(--serif);font-size:18px}
+
+  .clist{border:1px solid var(--line);border-radius:10px;background:var(--panel);overflow:hidden}
+  .crow{display:flex;align-items:center;gap:10px;padding:12px 13px;cursor:pointer;background:none;border:0;width:100%;text-align:left;color:var(--text);font-family:var(--sans)}
+  .crow + .crow{border-top:1px solid var(--line)}
+  .crow[aria-selected="true"]{background:#232C28}
+  .crow .nm{flex:1;font-size:14.5px;font-family:var(--serif)}
+  .crow .nm small{display:block;font-family:var(--sans);font-size:11px;color:var(--muted)}
+  .crow .g{font-family:var(--serif);font-size:14px;color:var(--gold);white-space:nowrap}
+  .crow .j{font-family:var(--serif);font-size:15px;color:var(--jade);white-space:nowrap;min-width:82px;text-align:right}
+
+  .stats{display:flex;border:1px solid var(--line);border-radius:10px;background:var(--panel);overflow:hidden;margin-top:14px}
+  .stat{flex:1;padding:13px 10px;text-align:center}
+  .stat + .stat{border-left:1px solid var(--line)}
+  .stat .k{font-size:10.5px;color:var(--muted)}
+  .stat .v{font-family:var(--serif);font-size:19px;margin-top:3px}
+  .stat.j .v{color:var(--jade)} .stat.g .v{color:var(--gold)}
+
+  .bd{font-size:13px}
+  .bd .r{display:flex;justify-content:space-between;padding:7px 0;gap:12px}
+  .bd .r + .r{border-top:1px solid var(--line)}
+  .bd .r span:last-child{font-family:var(--serif);font-size:14px;white-space:nowrap}
+  .bd .r.total-j span:last-child{color:var(--jade);font-size:16px}
+  .bd .r.dim span{color:var(--muted)}
+
+  .day{border:1px solid var(--line);border-radius:10px;background:var(--panel);margin-top:9px;overflow:hidden}
+  .dhead{display:flex;align-items:center;gap:10px;padding:12px 13px;cursor:pointer}
+  .dhead .d{font-family:var(--serif);font-size:16px;width:66px;flex:none}
+  .dhead .c{flex:1;font-size:11.5px;color:var(--muted)}
+  .dhead .a{font-family:var(--serif);font-size:15px;color:var(--jade)}
+  .dbody{border-top:1px solid var(--line);padding:12px 13px}
+  .tline{display:flex;align-items:center;gap:9px;padding:8px 0;font-size:13px}
+  .tline + .tline{border-top:1px solid #2A2932}
+  .tline .n{flex:1;line-height:1.35}
+  .tline .n small{display:block;color:var(--muted);font-size:11px}
+  .tline .p{font-family:var(--serif);color:var(--gold);font-size:13.5px;white-space:nowrap}
+  .tline .b{font-family:var(--serif);color:var(--jade);font-size:13.5px;white-space:nowrap}
+  .tag{border:1px solid var(--line);background:var(--panel2);color:var(--muted);font-size:10.5px;padding:3px 7px;border-radius:20px;white-space:nowrap}
+  .hide{display:none !important}
+</style>
+</head>
+<body>
+
+<div class="top"><div class="top-in">
+  <div class="t">ANNEX 管理</div><div class="s">読み取り専用</div>
+  <div class="sync" id="sync">接続中…</div>
+</div></div>
+
+<div class="wrap">
+  <div class="msg hide" id="offline" style="border-left-color:#D08A7A"></div>
+
+  <div class="mnav">
+    <button data-mv="-1">‹</button><div class="t" id="mTitle">—</div><button data-mv="1">›</button>
+  </div>
+
+  <div id="casts" class="clist"></div>
+
+  <div class="msg">
+    保存されている記録だけを集計しています。本人が「保存しない」を選んだ分は含まれないため、月の合計が実際の手取りと一致するとは限りません。金額はすべて記録時点の計算結果です。
+  </div>
+
+  <div id="detail" class="hide">
+    <h2 id="dName">—<span class="note">この月の内訳</span></h2>
+    <div class="stats">
+      <div class="stat j"><div class="k">手取り</div><div class="v" id="aTake">¥0</div></div>
+      <div class="stat g"><div class="k">お店の売上</div><div class="v" id="aPay">¥0</div></div>
+      <div class="stat"><div class="k">出勤 / 卓数</div><div class="v" id="aCnt">0 / 0</div></div>
+    </div>
+    <div class="card bd" id="aSum" style="margin-top:8px"></div>
+    <div id="aDays" style="margin-top:14px"></div>
+
+    <h2>この人のステータス<span class="note">本人が入力した値</span></h2>
+    <div class="card bd" id="aStatus"></div>
+
+    <h2>記録の修正履歴<span class="note">この月ぶん</span></h2>
+    <div id="aEdits"></div>
+  </div>
+  <div style="height:40px"></div>
+</div>
+
+<script src="../calc.js"></script>
+<script>
+const SB_URL="https://owabuvuktpokcgmtjfdi.supabase.co";
+const SB_KEY="sb_publishable_My1JblsUs1sB2EjCUrWv4g_TwE2-cM7";
+const $=id=>document.getElementById(id);
+async function sb(path,opts={}){
+  let res;
+  try{
+    res=await fetch(SB_URL+"/rest/v1/"+path,{...opts,
+      headers:{apikey:SB_KEY,Authorization:"Bearer "+SB_KEY,"Content-Type":"application/json",
+        Prefer:opts.prefer||"return=representation",...(opts.headers||{})}});
+  }catch(net){ throw new Error("サーバーに接続できません（通信がブロックされています）"); }
+  if(!res.ok){ let d=""; try{const j=JSON.parse(await res.text()); d=j.message||j.hint||"";}catch(_){}
+    throw new Error(`${res.status} ${d}`.trim()); }
+  const txt=await res.text(); return txt?JSON.parse(txt):null;
+}
+function syncMsg(t,ok=true){const e=$("sync");e.textContent=t;e.style.color=ok?"var(--jade)":"#D08A7A";
+  clearTimeout(syncMsg._t);syncMsg._t=setTimeout(()=>{e.textContent="";},ok?2200:6000);}
+const esc=x=>String(x==null?"":x).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const EDLBL={work_date:"日付",label:"呼び名",pay:"支払い",back:"バック"};
+const edVal=(k,v)=>(k==="pay"||k==="back")?("¥"+yen(v||0)):String(v==null?"":v);
+function edDiff(e){const b=e.before_json||{},a=e.after_json||{};
+  const ks=Object.keys(a).filter(k=>String(a[k])!==String(b[k]));
+  return ks.length?ks.map(k=>`${EDLBL[k]||k} ${edVal(k,b[k])} → ${edVal(k,a[k])}`).join(" ／ "):"内容を作り直し";}
+function edWhen(ts){const d=new Date(ts);
+  return `${d.getMonth()+1}/${d.getDate()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;}
+
+let curMonth="", CASTS=[], BY={}, SEL=null;
+
+async function load(m){
+  curMonth=m;
+  const [y,mo]=m.split("-");
+  $("mTitle").textContent=`${y}年 ${Number(mo)}月`;
+  const from=m+"-01", last=new Date(+y,+mo,0);
+  const to=`${m}-${pad(last.getDate())}`;
+  try{
+    CASTS=await sb("annex_casts?select=*&order=name.asc")||[];
+    const sts=await sb("annex_cast_status?select=*")||[];
+    const tbls=await sb(`annex_tables?work_date=gte.${from}&work_date=lte.${to}&select=*&order=work_date.asc,created_at.asc`)||[];
+    const days=await sb(`annex_days?work_date=gte.${from}&work_date=lte.${to}&select=*`)||[];
+    const ids=tbls.map(t=>t.id);
+    const edits=ids.length?(await sb(`annex_table_edits?table_id=in.(${ids.join(",")})&select=*&order=changed_at.desc`)||[]):[];
+    BY={};
+    CASTS.forEach(c=>{
+      const st=sts.find(x=>x.cast_id===c.id);
+      const recs={}; days.filter(d=>d.cast_id===c.id).forEach(d=>recs[d.work_date]=dayFromRow(d));
+      const ts=tbls.filter(t=>t.cast_id===c.id);
+      const S=st?statusFromRow(st):{hourly:3500,bkHon:50,bkJonai:50,bkDohan:50,
+        bk:{cast:50,shot:30,champ:20,wine:10,bottle:10,food:0,other:0},
+        base:"net",attr:"hon",kousei:0,okuri:0,gensen:true};
+      const map=groupByDay(ts,recs);
+      BY[c.id]={cast:c,S,recs,tables:ts,map,month:calcMonth(map,recs,S),
+        edits:edits.filter(e=>e.cast_id===c.id)};
+    });
+    $("offline").classList.add("hide");
+    syncMsg("読み込みました");
+  }catch(e){
+    CASTS=[];BY={};
+    $("offline").classList.remove("hide");
+    $("offline").innerHTML=`<b>サーバーに接続できていません。</b>（${esc(e.message)}）`;
+    syncMsg("読み込みに失敗",false);
+  }
+  renderCasts();
+  if(SEL&&BY[SEL]) renderDetail(SEL); else {SEL=null;$("detail").classList.add("hide");}
+}
+
+function renderCasts(){
+  if(!CASTS.length){$("casts").outerHTML='<div class="clist" id="casts"><div class="empty" style="border:0">登録されている人がいません</div></div>';return;}
+  $("casts").innerHTML=CASTS.map(c=>{const d=BY[c.id],m=d.month;
+    return `<button class="crow" data-c="${c.id}" aria-selected="${SEL===c.id}">
+      <div class="nm">${esc(c.name)}<small>出勤 ${m.days}日 ・ ${m.tables}卓${c.pass_hash?" ・ パスコードあり":""}</small></div>
+      <div class="g">¥${yen(m.pay)}</div><div class="j">¥${yen(m.take)}</div></button>`;}).join("");
+}
+
+function renderDetail(id){
+  SEL=id; const d=BY[id]; if(!d) return;
+  $("detail").classList.remove("hide");
+  $("dName").innerHTML=`${esc(d.cast.name)}<span class="note">この月の内訳</span>`;
+  const m=d.month,S=d.S;
+  $("aTake").textContent="¥"+yen(m.take);
+  $("aPay").textContent="¥"+yen(m.pay);
+  $("aCnt").textContent=`${m.days} / ${m.tables}`;
+  $("aSum").innerHTML=`<div class="r"><span>勤務時間の合計</span><span>${m.hours}時間</span></div>`
+    +`<div class="r"><span>うち卓についた時間</span><span>${m.stayMin?hhmm(m.stayMin):"—"}</span></div>`
+    +`<div class="r"><span>卓の取り分合計</span><span>¥${yen(m.takeTotal)}</span></div>`
+    +`<div class="r dim"><span>うち バック</span><span>¥${yen(m.back)}</span></div>`
+    +`<div class="r dim"><span>うち 時給（卓についていた分）</span><span>¥${yen(m.stayWage)}</span></div>`
+    +`<div class="r"><span>待機などの時給</span><span>¥${yen(m.wage-m.stayWage)}</span></div>`;
+
+  const ds=Object.keys(d.map).sort().reverse();
+  $("aDays").innerHTML=ds.length?ds.map(dt=>{
+    const tl=d.map[dt],r=calcDay(tl,d.recs[dt],S),dd=new Date(dt+"T00:00:00"),wd="日月火水木金土"[dd.getDay()];
+    return `<div class="day">
+      <div class="dhead" data-day="${dt}"><div class="d">${dd.getDate()}<span style="font-size:11px;color:var(--muted)">（${wd}）</span></div>
+      <div class="c">${tl.length}卓 ・ 支払 ¥${yen(r.pay)}</div><div class="a">¥${yen(r.take)}</div></div>
+      <div class="dbody hide" id="db-${dt}">
+        ${tl.map(t=>{const mn=tableMin(t),tk=r.tableTake(t),wg=tk-t.back,ne=d.edits.filter(e=>e.table_id===t.id).length;
+          return `<div class="tline"><div class="n">${esc(t.label)}${ne?` <span class="tag">修正${ne}回</span>`:""}<small>${esc(t.meta)}</small>${mn?`<small>滞在 ${hhmm(mn)}${wg?` ・ バック ¥${yen(t.back)} ＋ 時給 ¥${yen(wg)}`:""}</small>`:""}</div>
+          <div class="p">${t.pay?"¥"+yen(t.pay):""}</div><div class="b">¥${yen(tk)}</div></div>`;}).join("")
+          ||'<div style="color:var(--muted);font-size:12px;padding:6px 0">卓の記録なし</div>'}
+        <div class="bd" style="margin-top:8px;border-top:1px solid var(--line);padding-top:8px">
+          <div class="r dim"><span>出勤・退勤</span><span style="font-family:var(--sans);font-size:13px">${r.inT&&r.outT?`${r.inT} → ${r.outT}`:"—"}</span></div>
+          <div class="r dim"><span>実働時間</span><span>${r.hours}時間</span></div>
+          <div class="r dim"><span>送り</span><span style="font-family:var(--sans);font-size:13px">${r.okuri?"使った":"なし"}</span></div>
+          ${r.stayMin?`<div class="r"><span>卓の取り分合計</span><span>¥${yen(r.takeTotal)}</span></div>`
+            :(r.back?`<div class="r"><span>卓のバック合計</span><span>¥${yen(r.back)}</span></div>`:"")}
+          ${r.idleWage?`<div class="r"><span>${r.stayWage?"待機などの時給":"時給分"}</span><span>¥${yen(r.idleWage)}</span></div>`:""}
+          ${r.kousei?`<div class="r dim"><span>厚生費</span><span>−¥${yen(r.kousei)}</span></div>`:""}
+          ${r.okuriFee?`<div class="r dim"><span>送り代</span><span>−¥${yen(r.okuriFee)}</span></div>`:""}
+          ${r.gensen?`<div class="r dim"><span>源泉徴収 10.21%</span><span>−¥${yen(r.gensen)}</span></div>`:""}
+          <div class="r total-j"><span>この日の手取り</span><span>¥${yen(r.take)}</span></div>
+        </div></div></div>`;}).join("")
+    :'<div class="empty">この月の記録はまだありません</div>';
+
+  const L=[["時給",`¥${yen(S.hourly)}`],["本指名バック",S.bkHon+"%"],["場内指名バック",S.bkJonai+"%"],
+    ["同伴バック",S.bkDohan+"%"],["キャストドリンク",S.bk.cast+"%"],["ショット",S.bk.shot+"%"],
+    ["シャンパン",S.bk.champ+"%"],["ワイン",S.bk.wine+"%"],["焼酎・ウイスキー",S.bk.bottle+"%"],
+    ["フード",S.bk.food+"%"],["その他",S.bk.other+"%"],
+    ["計算のもと",S.base==="net"?"税サ抜き":"税サ込み"],
+    ["飲食売上の帰属",{hon:"本指名が総取り",split:"指名者で按分",self:"自分宛のみ"}[S.attr]],
+    ["厚生費",`¥${yen(S.kousei)}`],["送り代",`¥${yen(S.okuri)}`],["源泉徴収",S.gensen?"あり":"なし"],
+    ["パスコード",d.cast.pass_hash?"設定あり":"未設定"]];
+  $("aStatus").innerHTML=L.map(x=>`<div class="r"><span>${x[0]}</span><span style="font-family:var(--sans);font-size:13px">${x[1]}</span></div>`).join("");
+
+  const byId={}; d.tables.forEach(t=>byId[t.id]=t);
+  $("aEdits").innerHTML=d.edits.length
+    ?`<div class="card bd">${d.edits.map(e=>`<div class="r"><span style="font-size:12.5px">${edWhen(e.changed_at)}　${esc((byId[e.table_id]||{}).label||"（削除された記録）")}</span>
+        <span style="font-family:var(--sans);font-size:12px;text-align:right;white-space:normal;line-height:1.45">${esc(edDiff(e))}</span></div>`).join("")}</div>`
+    :'<div class="empty">この月に直された記録はありません</div>';
+}
+
+document.addEventListener("click",async e=>{
+  const t=e.target.closest("button, .dhead"); if(!t) return;
+  if(t.dataset.c){ renderCasts(); renderDetail(t.dataset.c); window.scrollTo(0,0); return; }
+  if(t.dataset.day){ const b=$("db-"+t.dataset.day); if(b) b.classList.toggle("hide"); return; }
+  if(t.dataset.mv){
+    const [y,mo]=curMonth.split("-").map(Number);
+    const d=new Date(y,mo-1+Number(t.dataset.mv),1);
+    await load(`${d.getFullYear()}-${pad(d.getMonth()+1)}`); return;
+  }
+});
+
+load(todayStr().slice(0,7));
+</script>
+</body>
+</html>

@@ -140,7 +140,7 @@
 </head>
 <body>
 
-<div class="ledger">
+<div class="ledger hide" id="ledger">
   <div class="ledger-in">
     <div class="col pay">
       <div class="k">この卓の支払い</div>
@@ -154,6 +154,7 @@
     </div>
   </div>
   <div class="mbar">
+    <span id="whoami" style="color:var(--jade)"></span>
     <span id="mLabel">今月</span>
     <span>手取り <b id="mTake">¥0</b></span>
     <span>支払 <span class="g" id="mPay">¥0</span></span>
@@ -161,16 +162,29 @@
   </div>
 </div>
 
-<div class="wrap">
+<div class="gate hide" id="castGate">
+  <h2 style="text-align:center;font-size:17px;margin-bottom:12px">源氏名を入れてください</h2>
+  <div class="msg" id="cgNote">
+    入れた源氏名で、この端末は<b>その人専用</b>になります。はじめての名前ならそのまま登録され、次からは入力なしで開きます。
+  </div>
+  <input type="text" id="cgName" placeholder="源氏名" style="text-align:center;font-size:18px;margin-top:12px">
+  <input type="password" id="cgPass" inputmode="numeric" placeholder="パスコード" class="hide"
+         style="text-align:center;font-size:18px;letter-spacing:.3em;margin-top:8px">
+  <button class="btn jade" id="cgGo" style="margin-top:12px">開く</button>
+  <button class="btn ghost hide" id="cgBack">名前を入れ直す</button>
+  <div class="saved" id="cgMsg" style="text-align:center;min-height:34px"></div>
+</div>
+
+<div class="wrap hide" id="app">
   <div class="msg hide" id="offline" style="border-left-color:#D08A7A;margin:14px 0"></div>
   <div class="tabs" role="tablist">
     <button class="tab" role="tab" aria-selected="true" data-t="check">会計</button>
-    <button class="tab" role="tab" aria-selected="false" data-t="riko">璃子シート</button>
-    <button class="tab" role="tab" aria-selected="false" data-t="admin">管理</button>
+    <button class="tab" role="tab" aria-selected="false" data-t="riko" id="tabMine">自分のシート</button>
   </div>
 
   <!-- ════════ 会計 ════════ -->
   <div id="p-check">
+    <div class="msg j hide" id="editBanner" style="margin-bottom:16px"></div>
     <section>
       <h2>席と時間</h2>
       <div class="card">
@@ -202,7 +216,7 @@
     </section>
 
     <section>
-      <h2>璃子ちゃんの立場<span class="note">この卓での指名区分</span></h2>
+      <h2>自分の立場<span class="note">この卓での指名区分</span></h2>
       <div class="seg jade" id="segRole">
         <button data-r="hon" aria-pressed="true">本指名</button>
         <button data-r="jonai" aria-pressed="false">場内指名</button>
@@ -222,7 +236,7 @@
     <section><h2>お客様側の内訳</h2><div class="card bd" id="bdPay"></div></section>
 
     <section>
-      <h2>璃子ちゃん側の内訳<span class="note">卓ごとのバック</span></h2>
+      <h2>自分の取り分の内訳<span class="note">卓ごとのバックと時給</span></h2>
       <div class="card bd" id="bdGet"></div>
       <div class="msg" style="margin-top:10px">時給分は、この卓にいた時間ぶんの目安です。待機時間の時給、厚生費、送り代、源泉は1日単位でかかるものなので、ここには入れず日計で反映しています。</div>
     </section>
@@ -235,19 +249,13 @@
           <input type="text" id="recLabel" placeholder="1卓目" style="width:132px;flex:none"></div>
       </div>
       <button class="btn primary" id="saveTable" style="margin-top:10px">記録に追加する</button>
+      <button class="btn ghost hide" id="cancelEdit">修正をやめる</button>
       <div class="saved" id="recMsg"></div>
     </section>
   </div>
 
-  <!-- ════════ 璃子シート ════════ -->
+  <!-- ════════ 自分のシート ════════ -->
   <div id="p-riko" class="hide">
-    <div id="gate" class="gate hide">
-      <h2 style="text-align:center">パスコードを入力</h2>
-      <input type="password" id="gateInput" inputmode="numeric" placeholder="パスコード" style="text-align:center;font-size:20px;letter-spacing:.3em">
-      <button class="btn jade" id="gateGo" style="margin-top:12px">開く</button>
-      <div class="saved" id="gateMsg" style="text-align:center"></div>
-    </div>
-
     <div id="rikoBody">
       <div class="mnav">
         <button data-mv="-1">‹</button><div class="t" id="mTitle">—</div><button data-mv="1">›</button>
@@ -261,7 +269,7 @@
       <div class="msg j" style="margin-top:8px" id="mNote"></div>
       <div style="display:flex;align-items:center;gap:10px;margin-top:8px">
         <div style="flex:1;font-size:11px;color:var(--jade)" id="stUpdated"></div>
-        <button class="btn ghost" id="lockNow" style="width:auto;padding:8px 14px">ロックする</button>
+        <button class="btn ghost" id="lockNow" style="width:auto;padding:8px 14px">別の人に切り替える</button>
       </div>
       <div id="days" style="margin-top:14px"></div>
 
@@ -340,27 +348,9 @@
     </div>
   </div>
 
-  <!-- ════════ 管理 ════════ -->
-  <div id="p-admin" class="hide">
-    <div class="mnav">
-      <button data-mv="-1">‹</button><div class="t" id="aTitle">—</div><button data-mv="1">›</button>
-    </div>
-    <div class="stats">
-      <div class="stat j"><div class="k">璃子ちゃんの手取り</div><div class="v" id="aTake">¥0</div></div>
-      <div class="stat g"><div class="k">支払い合計</div><div class="v" id="aPay">¥0</div></div>
-      <div class="stat"><div class="k">出勤 / 卓数</div><div class="v" id="aCnt">0 / 0</div></div>
-    </div>
-    <div class="card bd" id="aSum" style="margin-top:8px"></div>
-    <div class="msg" style="margin-top:8px">保存されている記録だけを集計しています。璃子ちゃんが保存しない選択をした分は含まれないため、月の合計が実際の手取りと一致するとは限りません。</div>
-    <div id="aDays" style="margin-top:14px"></div>
-    <section style="margin-top:26px">
-      <h2>現在のステータス<span class="note">読み取り専用</span></h2>
-      <div class="card bd" id="aStatus"></div>
-    </section>
-    <div style="height:40px"></div>
-  </div>
 </div>
 
+<script src="calc.js"></script>
 <script>
 /* ══════ Supabase ══════ */
 const SB_URL="https://owabuvuktpokcgmtjfdi.supabase.co";
@@ -407,47 +397,52 @@ const CATS=["cast","shot","champ","wine","bottle","food","other"];
 
 let S={hourly:3500,bkHon:50,bkJonai:50,bkDohan:50,bk:{cast:50,shot:30,champ:20,wine:10,bottle:10,food:0,other:0},base:"net",attr:"hon",kousei:0,okuri:0,gensen:true,passHash:null};
 let C={floor:"main",guests:1,ext:0,late:false,honshimei:1,jonai:0,dohan:0,role:"hon",bill:[]};
-let TBLS=[],DAYS={},curMonth="",unlocked=false,TEMP=[];
+let TBLS=[],DAYS={},curMonth="",TEMP=[];
+let CAST=null;          /* {id,name,pass_hash} ログイン中の人 */
+let EDITS=[];           /* 表示中の月の修正履歴 */
+let EDIT=null;          /* 編集中の卓の記録。null なら新規 */
 
-const yen=n=>Math.round(n).toLocaleString("ja-JP");
 const $=id=>document.getElementById(id);
-const pad=n=>String(n).padStart(2,"0");
-const todayStr=()=>{const d=new Date();return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;};
 const LS={get(k){try{return localStorage.getItem(k);}catch(e){return null;}},
   set(k,v){try{localStorage.setItem(k,v);}catch(e){}},
   del(k){try{localStorage.removeItem(k);}catch(e){}}};
 async function sha(t){const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(t));
   return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("");}
 
-/* ══════ 読み書き ══════ */
-function fromRow(r){return{hourly:r.hourly,bkHon:+r.bk_hon,bkJonai:+r.bk_jonai,bkDohan:+r.bk_dohan,
-  bk:{cast:+r.bk_cast,shot:+r.bk_shot,champ:+r.bk_champ,wine:+r.bk_wine,bottle:+r.bk_bottle,food:+r.bk_food,other:+r.bk_other},
-  base:r.base,attr:r.attr,kousei:r.kousei,okuri:r.okuri,gensen:r.gensen,passHash:r.pass_hash,updatedAt:r.updated_at};}
-function toRow(s){return{hourly:s.hourly,bk_hon:s.bkHon,bk_jonai:s.bkJonai,bk_dohan:s.bkDohan,
-  bk_cast:s.bk.cast,bk_shot:s.bk.shot,bk_champ:s.bk.champ,bk_wine:s.bk.wine,bk_bottle:s.bk.bottle,
-  bk_food:s.bk.food,bk_other:s.bk.other,base:s.base,attr:s.attr,kousei:s.kousei,okuri:s.okuri,
-  gensen:s.gensen,updated_at:new Date().toISOString()};}
+/* ══════ 源氏名（キャスト） ══════ */
+const q=v=>encodeURIComponent(v);
+async function findCast(name){
+  const r=await sb(`annex_casts?name=eq.${q(name)}&select=*`);
+  return (r&&r[0])||null;
+}
+async function createCast(name,passHash){
+  const r=await sb("annex_casts",{method:"POST",body:JSON.stringify({name,pass_hash:passHash})});
+  const c=r&&r[0];
+  if(c) await sb("annex_cast_status",{method:"POST",body:JSON.stringify({cast_id:c.id})});
+  return c;
+}
+function castKey(k){return `annex:${k}:${CAST?CAST.id:""}`;}
 
+/* ══════ 読み書き ══════ */
 async function loadStatus(){
-  const cached=LS.get("annex:status");
+  const cached=LS.get(castKey("status"));
   if(cached){try{S=JSON.parse(cached);fillStatusForm();}catch(e){}}
   try{
-    const r=await sb("annex_status?id=eq.1&select=*");
-    if(r&&r[0]){S=fromRow(r[0]);LS.set("annex:status",JSON.stringify(S));}
+    const r=await sb(`annex_cast_status?cast_id=eq.${CAST.id}&select=*`);
+    if(r&&r[0]){S=statusFromRow(r[0]);LS.set(castKey("status"),JSON.stringify(S));}
+    else await sb("annex_cast_status",{method:"POST",body:JSON.stringify({cast_id:CAST.id})});
     offline(false);
   }
   catch(e){offline(true,e.message);syncMsg("接続エラー",false);}
-  if(!S.passHash) unlocked=true;
-  else if(LS.get("annex:unlocked")===S.passHash) unlocked=true;
   fillStatusForm();
 }
 let stT=null;
 function saveStatusSoon(){clearTimeout(stT);stT=setTimeout(async()=>{
-  try{const r=await sb("annex_status?id=eq.1",{method:"PATCH",body:JSON.stringify(toRow(S))});
+  try{const r=await sb(`annex_cast_status?cast_id=eq.${CAST.id}`,{method:"PATCH",body:JSON.stringify(statusToRow(S))});
     if(r&&r[0]) S.updatedAt=r[0].updated_at;
-    LS.set("annex:status",JSON.stringify(S));
+    LS.set(castKey("status"),JSON.stringify(S));
     $("savedMsg").textContent="保存しました";syncMsg("同期しました");
-    showUpdated(); renderAdmin();
+    showUpdated();
     setTimeout(()=>{$("savedMsg").textContent="";},1600);
   }catch(e){$("savedMsg").textContent="保存できませんでした";syncMsg("同期エラー",false);}
 },500);}
@@ -463,12 +458,13 @@ async function loadMonth(m){
   const from=m+"-01", d=new Date(+m.slice(0,4),+m.slice(5,7),0);
   const to=`${m}-${pad(d.getDate())}`;
   try{
-    TBLS=await sb(`annex_tables?work_date=gte.${from}&work_date=lte.${to}&select=*&order=work_date.asc,created_at.asc`)||[];
-    const ds=await sb(`annex_days?work_date=gte.${from}&work_date=lte.${to}&select=*`)||[];
-    DAYS={}; ds.forEach(x=>DAYS[x.work_date]={hours:+x.hours,okuri:!!x.okuri,
-      inT:(x.in_time||"").slice(0,5),outT:(x.out_time||"").slice(0,5)});
-  }catch(e){TBLS=[];DAYS={};syncMsg("読み込みに失敗",false);}
-  renderMonthBar(); renderDays("days","mTitle","sTake","sPay","sCnt",true); renderAdmin();
+    TBLS=await sb(`annex_tables?cast_id=eq.${CAST.id}&work_date=gte.${from}&work_date=lte.${to}&select=*&order=work_date.asc,created_at.asc`)||[];
+    const ds=await sb(`annex_days?cast_id=eq.${CAST.id}&work_date=gte.${from}&work_date=lte.${to}&select=*`)||[];
+    DAYS={}; ds.forEach(x=>DAYS[x.work_date]=dayFromRow(x));
+    const ids=TBLS.map(t=>t.id);
+    EDITS=ids.length?(await sb(`annex_table_edits?table_id=in.(${ids.join(",")})&select=*&order=changed_at.desc`)||[]):[];
+  }catch(e){TBLS=[];DAYS={};EDITS=[];syncMsg("読み込みに失敗",false);}
+  renderMonthBar(); renderDays("days","mTitle","sTake","sPay","sCnt",true);
 }
 
 /* ══════ 計算 ══════ */
@@ -509,53 +505,48 @@ function calcTable(c,st){
     backTotal,shareNote,stayMin,wageShare,take:backTotal+wageShare};
 }
 function allTables(inc){return inc===false?TBLS:TBLS.concat(TEMP.filter(t=>t.work_date.slice(0,7)===curMonth));}
-function dayList(inc){const m={};allTables(inc).forEach(t=>{(m[t.work_date]=m[t.work_date]||[]).push(t);});
-  Object.keys(DAYS).forEach(d=>{if(!m[d])m[d]=[];});return m;}
-/* 出退勤 → 実働時間。日跨ぎ対応。ROUND_MIN 単位で切り捨て */
-const ROUND_MIN=30;
-function hhmm(n){const h=Math.floor(n/60),m=n%60;return h?`${h}時間${m?m+"分":""}`:`${m}分`;}
-function spanMin(a,b){if(!a||!b)return null;
-  const p=s=>{const[h,m]=s.split(":").map(Number);return h*60+(m||0);};
-  let d=p(b)-p(a); if(d<0)d+=1440; return d;}
-function autoHours(rec){const mn=spanMin(rec.inT,rec.outT); if(mn===null)return null;
-  return Math.floor(mn/ROUND_MIN)*ROUND_MIN/60;}
-/* 卓の滞在時間。基本50分＋延長25分×回数。自己記録は卓ではないので0 */
-function tableMin(t){return (t.source==="riko"||t.temp)?0:50+(t.ext||0)*25;}
-
-function calcDay(d,tl){
-  const back=tl.reduce((s,t)=>s+t.back,0),pay=tl.reduce((s,t)=>s+t.pay,0);
-  const rec=DAYS[d]||{hours:0,okuri:false,inT:"",outT:""};
-  const inT=rec.inT||"",outT=rec.outT||"";
-  const rawMin=spanMin(inT,outT),auto=autoHours(rec);
-  const hours=(auto!==null)?auto:(rec.hours||0),okuri=!!rec.okuri;
-  const stayMin=tl.reduce((s,t)=>s+tableMin(t),0);
-  const rate=(rawMin&&stayMin)?Math.min(100,Math.round(stayMin/rawMin*100)):null;
-  const wage=S.hourly*hours,gross=back+wage;
-  /* 時給のうち卓についていた時間ぶん。実働時間を超えないよう頭打ちにする */
-  const stayWageRaw=S.hourly*stayMin/60;
-  const stayWage=Math.min(stayWageRaw,wage),idleWage=wage-stayWage;
-  const wageF=stayWageRaw>0?stayWage/stayWageRaw:0;
-  const tableTake=t=>t.back+S.hourly*tableMin(t)/60*wageF;
-  const takeTotal=tl.reduce((s,t)=>s+tableTake(t),0);
-  const gensen=S.gensen?gross*0.1021:0;
-  const kousei=tl.length?S.kousei:0;
-  const okuriFee=okuri?S.okuri:0;
-  const fixed=kousei+okuriFee;
-  return {back,pay,hours,okuri,wage,gross,gensen,kousei,okuriFee,fixed,
-    inT,outT,rawMin,auto,stayMin,rate,stayWage,idleWage,tableTake,takeTotal,
-    take:Math.max(0,gross-gensen-fixed)};
-}
-function calcMonth(inc){
-  const m=dayList(inc);let take=0,pay=0,tables=0,days=0,hours=0,wage=0,back=0,stayMin=0,
-    stayWage=0,takeTotal=0;
-  Object.keys(m).forEach(d=>{const r=calcDay(d,m[d]);take+=r.take;pay+=r.pay;tables+=m[d].length;
-    hours+=r.hours;wage+=r.wage;back+=r.back;stayMin+=r.stayMin;
-    stayWage+=r.stayWage;takeTotal+=r.takeTotal;
-    if(m[d].length||(DAYS[d]&&(DAYS[d].hours||DAYS[d].inT)))days++;});
-  return {take,pay,tables,days,hours,wage,back,stayMin,stayWage,takeTotal};
-}
-
+function dayList(inc){return groupByDay(allTables(inc),DAYS);}
+function monthOf(inc){return calcMonth(dayList(inc),DAYS,S);}
 /* ══════ 描画 ══════ */
+const esc=x=>String(x==null?"":x).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const EDLBL={work_date:"日付",label:"呼び名",pay:"支払い",back:"バック"};
+const edVal=(k,v)=>(k==="pay"||k==="back")?("¥"+yen(v||0)):String(v==null?"":v);
+function edDiff(e){
+  const b=e.before_json||{},a=e.after_json||{};
+  const ks=Object.keys(a).filter(k=>String(a[k])!==String(b[k]));
+  return ks.length?ks.map(k=>`${EDLBL[k]||k} ${edVal(k,b[k])} → ${edVal(k,a[k])}`).join(" ／ "):"内容を作り直し";
+}
+function edWhen(ts){const d=new Date(ts);
+  return `${d.getMonth()+1}/${d.getDate()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;}
+function editPanel(t){
+  const es=EDITS.filter(e=>e.table_id===t.id);
+  return `<div class="hide" id="ed-${t.id}" style="padding:6px 0 10px;border-top:1px dashed var(--line)">
+    <div class="row"><div class="lab">日付</div><input type="date" class="w-date" id="edd-${t.id}" value="${t.work_date}"></div>
+    <div class="row"><div class="lab">呼び名</div><input type="text" id="edl-${t.id}" value="${esc(t.label)}" style="width:132px;flex:none"></div>
+    <div class="row"><div class="lab">お客さんの支払い<small>お店に払った金額</small></div><input type="number" class="w-num" id="edp-${t.id}" value="${t.pay}" step="100"><span class="suffix">円</span></div>
+    <div class="row"><div class="lab">自分のバック</div><input type="number" class="w-num" id="edb-${t.id}" value="${t.back}" step="100"><span class="suffix">円</span></div>
+    <button class="btn jade" data-edsave="${t.id}">この金額で直す</button>
+    ${t.floor?`<button class="btn" data-edload="${t.id}">会計タブで作り直す</button>`:""}
+    ${es.length?`<div class="bd" style="margin-top:10px">
+      <div class="r dim"><span>修正履歴</span><span>${es.length}件</span></div>
+      ${es.map(e=>`<div class="r dim"><span style="font-family:var(--sans);font-size:11.5px;white-space:nowrap">${edWhen(e.changed_at)}</span><span style="font-family:var(--sans);font-size:11.5px;text-align:right;white-space:normal;line-height:1.45">${esc(edDiff(e))}</span></div>`).join("")}</div>`:""}
+  </div>`;
+}
+function syncCheckForm(){
+  ["guests","ext","honshimei","jonai","dohan"].forEach(k=>$("n-"+k).textContent=C[k]);
+  $("cLate").checked=C.late;
+  [...$("segFloor").children].forEach(b=>b.setAttribute("aria-pressed",b.dataset.f===C.floor));
+  [...$("segRole").children].forEach(b=>b.setAttribute("aria-pressed",b.dataset.r===C.role));
+  render();
+}
+function showEditState(){
+  const on=!!EDIT;
+  $("editBanner").classList.toggle("hide",!on);
+  if(on) $("editBanner").innerHTML=`<b>「${esc(EDIT.before.label)}」（${EDIT.before.work_date}）を直しています。</b><br>`
+    +`内容を変えて下の「この内容で上書きする」を押すと、記録が置きかわります。元の金額は修正履歴に残ります。`;
+  $("saveTable").textContent=on?"この内容で上書きする":"記録に追加する";
+  $("cancelEdit").classList.toggle("hide",!on);
+}
 function render(){
   const r=calcTable(C,S);
   $("hPay").textContent=yen(r.total);
@@ -564,13 +555,13 @@ function render(){
   $("hGetSub").textContent=`バック ¥${yen(r.backTotal)} ＋ 時給 ¥${yen(r.wageShare)}`;
 
   const rt={hon:"卓の飲食売上のバックは本指名についてもらえます。",
-    jonai:"場内指名の場合、飲食売上のバックは本指名の子につくのが基本です。ルールは璃子シートで変えられます。",
+    jonai:"場内指名の場合、飲食売上のバックは本指名の子につくのが基本です。ルールは自分のシートで変えられます。",
     help:"ヘルプは指名料も飲食バックも発生しない前提で計算しています。"};
   $("roleMsg").innerHTML=`<b>${{hon:"本指名",jonai:"場内指名",help:"ヘルプ"}[C.role]}</b> ${rt[C.role]}`;
 
   $("bill").innerHTML=C.bill.length===0?'<div class="empty" style="border:0">まだ何も入っていません</div>':
     C.bill.map((l,i)=>`<div class="bl"><div class="nm">${l.name}${l.qty>1?` <span style="color:var(--muted)">×${l.qty}</span>`:""}</div>
-      <button class="tag" data-mine="${i}" aria-pressed="${l.mine}">璃子</button>
+      <button class="tag" data-mine="${i}" aria-pressed="${l.mine}">自分</button>
       <div class="amt">¥${yen(l.price*l.qty)}</div><button class="del" data-del="${i}">×</button></div>`).join("");
 
   const p=[["セット料 ¥8,000 × "+C.guests+"名",r.setFee]];
@@ -601,7 +592,7 @@ function render(){
 }
 
 function renderMonthBar(){
-  const m=calcMonth();
+  const m=monthOf();
   $("mLabel").textContent=`${Number(curMonth.slice(5,7))}月`;
   $("mTake").textContent="¥"+yen(m.take);
   $("mPay").textContent="¥"+yen(m.pay);
@@ -610,7 +601,7 @@ function renderMonthBar(){
 function renderDays(target,titleId,tk,py,ct,editable){
   const [y,mo]=curMonth.split("-");
   $(titleId).textContent=`${y}年 ${Number(mo)}月`;
-  const m=calcMonth(editable);
+  const m=monthOf(editable);
   $(tk).textContent="¥"+yen(m.take); $(py).textContent="¥"+yen(m.pay);
   $(ct).textContent=`${m.days} / ${m.tables}`;
   const sum=$(editable?"mSum":"aSum");
@@ -625,15 +616,17 @@ function renderDays(target,titleId,tk,py,ct,editable){
   const map=dayList(editable), ds=Object.keys(map).sort().reverse();
   if(!ds.length){$(target).innerHTML='<div class="empty">この月の記録はまだありません</div>';return;}
   $(target).innerHTML=ds.map(d=>{
-    const tl=map[d],r=calcDay(d,tl),dd=new Date(d+"T00:00:00"),wd="日月火水木金土"[dd.getDay()];
+    const tl=map[d],r=calcDay(tl,DAYS[d],S),dd=new Date(d+"T00:00:00"),wd="日月火水木金土"[dd.getDay()];
     return `<div class="day">
       <div class="dhead" data-day="${target}-${d}"><div class="d">${dd.getDate()}<span style="font-size:11px;color:var(--muted)">（${wd}）</span></div>
       <div class="c">${tl.length}卓 ・ 支払 ¥${yen(r.pay)}</div><div class="a">¥${yen(r.take)}</div></div>
       <div class="dbody hide" id="db-${target}-${d}">
         ${tl.map(t=>{const mn=tableMin(t),tk=r.tableTake(t),wg=tk-t.back;
-          return `<div class="tline"><div class="n">${t.label}${t.temp?' <span class="tag" style="cursor:default">保存なし</span>':""}<small>${t.meta}</small>${mn?`<small>滞在 ${hhmm(mn)}${wg?` ・ バック ¥${yen(t.back)} ＋ 時給 ¥${yen(wg)}`:""} ・ 時間あたり ¥${yen(tk/(mn/60))}</small>`:""}</div>
+          return `<div class="tline"><div class="n">${esc(t.label)}${t.temp?' <span class="tag" style="cursor:default">保存なし</span>':""}<small>${esc(t.meta)}</small>${mn?`<small>滞在 ${hhmm(mn)}${wg?` ・ バック ¥${yen(t.back)} ＋ 時給 ¥${yen(wg)}`:""} ・ 時間あたり ¥${yen(tk/(mn/60))}</small>`:""}</div>
           <div class="p">${t.pay?"¥"+yen(t.pay):""}</div><div class="b">¥${yen(tk)}</div>
-          ${editable?`<button class="x" data-rm="${t.id}"${t.temp?' data-temp="1"':""}>×</button>`:""}</div>`;}).join("")
+          ${editable&&!t.temp?`<button class="x" data-ed="${t.id}" style="font-size:12px;font-family:var(--sans)">直す</button>`:""}
+          ${editable?`<button class="x" data-rm="${t.id}"${t.temp?' data-temp="1"':""}>×</button>`:""}</div>
+          ${editable&&!t.temp?editPanel(t):""}`;}).join("")
           ||'<div style="color:var(--muted);font-size:12px;padding:6px 0">卓の記録なし</div>'}
         <div class="row" style="border-top:1px solid var(--line);margin-top:8px">
           <div class="lab" style="white-space:nowrap">出勤・退勤</div>
@@ -666,18 +659,6 @@ function renderDays(target,titleId,tk,py,ct,editable){
   }).join("");
 }
 
-function renderAdmin(){
-  renderDays("aDays","aTitle","aTake","aPay","aCnt",false);  const L=[["時給",`¥${yen(S.hourly)}`],["本指名バック",S.bkHon+"%"],["場内指名バック",S.bkJonai+"%"],
-    ["同伴バック",S.bkDohan+"%"],["キャストドリンク",S.bk.cast+"%"],["ショット",S.bk.shot+"%"],
-    ["シャンパン",S.bk.champ+"%"],["ワイン",S.bk.wine+"%"],["焼酎・ウイスキー",S.bk.bottle+"%"],
-    ["フード",S.bk.food+"%"],["その他",S.bk.other+"%"],
-    ["計算のもと",S.base==="net"?"税サ抜き":"税サ込み"],
-    ["飲食売上の帰属",{hon:"本指名が総取り",split:"指名者で按分",self:"自分宛のみ"}[S.attr]],
-    ["厚生費",`¥${yen(S.kousei)}`],["送り代",`¥${yen(S.okuri)}`],["源泉徴収",S.gensen?"あり":"なし"],
-    ["パスコード",S.passHash?"設定あり":"未設定"]];
-  $("aStatus").innerHTML=L.map(x=>`<div class="r"><span>${x[0]}</span><span style="font-family:var(--sans);font-size:13px">${x[1]}</span></div>`).join("");
-}
-
 function fillStatusForm(){
   $("s_bkHon").value=S.bkHon; $("s_bkJonai").value=S.bkJonai; $("s_bkDohan").value=S.bkDohan;
   CATS.forEach(k=>$("s_bk_"+k).value=S.bk[k]);
@@ -701,40 +682,23 @@ document.addEventListener("click",async e=>{
     document.querySelectorAll(".tab").forEach(b=>b.setAttribute("aria-selected",b===t));
     $("p-check").classList.toggle("hide",t.dataset.t!=="check");
     $("p-riko").classList.toggle("hide",t.dataset.t!=="riko");
-    $("p-admin").classList.toggle("hide",t.dataset.t!=="admin");
-    if(t.dataset.t==="riko"){
-      const need=!!S.passHash&&!unlocked;
-      $("gate").classList.toggle("hide",!need);
-      $("rikoBody").classList.toggle("hide",need);
-      if(!need){showUpdated();renderDays("days","mTitle","sTake","sPay","sCnt",true);}
-    }
-    if(t.dataset.t==="admin") renderAdmin();
+    if(t.dataset.t==="riko"){showUpdated();renderDays("days","mTitle","sTake","sPay","sCnt",true);}
     window.scrollTo(0,0); return;
   }
-  if(t.id==="gateGo"){
-    const h=await sha($("gateInput").value);
-    if(h===S.passHash){unlocked=true;LS.set("annex:unlocked",h);
-      $("gateInput").value="";$("gateMsg").textContent="";
-      $("gate").classList.add("hide");$("rikoBody").classList.remove("hide");
-      showUpdated(); renderDays("days","mTitle","sTake","sPay","sCnt",true);}
-    else $("gateMsg").textContent="パスコードが違います";
-    return;
-  }
+  if(t.id==="cgGo"){ await gateGo(); return; }
+  if(t.id==="cgBack"){ gateReset(); return; }
   if(t.id==="lockNow"){
-    LS.del("annex:unlocked"); unlocked=false;
-    $("gate").classList.remove("hide"); $("rikoBody").classList.add("hide");
-    window.scrollTo(0,0); return;
+    LS.del("annex:cast"); if(CAST) LS.del(castKey("unlocked"));
+    location.reload(); return;
   }
   if(t.id==="pcSave"){
     const v=$("pcInput").value.trim();
     const h=v?await sha(v):null;
-    try{await sb("annex_status?id=eq.1",{method:"PATCH",body:JSON.stringify({pass_hash:h})});
-      S.passHash=h; unlocked=true;
-      if(h) LS.set("annex:unlocked",h); else LS.del("annex:unlocked");
-      LS.set("annex:status",JSON.stringify(S));
+    try{await sb(`annex_casts?id=eq.${CAST.id}`,{method:"PATCH",body:JSON.stringify({pass_hash:h})});
+      CAST.pass_hash=h;
+      if(h) LS.set(castKey("unlocked"),h); else LS.del(castKey("unlocked"));
       $("pcInput").value="";
       $("pcMsg").textContent=h?"パスコードを設定しました。この端末では次回から入力なしで開けます":"パスコードを解除しました";
-      renderAdmin();
     }catch(err){$("pcMsg").textContent="保存できませんでした";}
     return;
   }
@@ -757,24 +721,67 @@ document.addEventListener("click",async e=>{
   if(t.dataset.b){S.base=t.dataset.b;[...$("segBase").children].forEach(b=>b.setAttribute("aria-pressed",b===t));saveStatusSoon();render();return;}
   if(t.dataset.a){S.attr=t.dataset.a;[...$("segAttr").children].forEach(b=>b.setAttribute("aria-pressed",b===t));saveStatusSoon();render();return;}
 
+  if(t.id==="cancelEdit"){ EDIT=null; showEditState(); $("recLabel").value=""; return; }
   if(t.id==="saveTable"){
     const date=$("recDate").value||todayStr();
-    if(date.slice(0,7)!==curMonth) await loadMonth(date.slice(0,7));
+    if(!EDIT&&date.slice(0,7)!==curMonth) await loadMonth(date.slice(0,7));
     const r=calcTable(C,S);
     const n=TBLS.filter(x=>x.work_date===date).length;
-    const label=$("recLabel").value.trim()||`${n+1}卓目`;
+    const label=$("recLabel").value.trim()||(EDIT?EDIT.before.label:`${n+1}卓目`);
+    const row={cast_id:CAST.id,work_date:date,label,floor:C.floor,guests:C.guests,ext:C.ext,late:C.late,
+      honshimei:C.honshimei,jonai:C.jonai,dohan:C.dohan,role:C.role,bill:C.bill,
+      pay:Math.round(r.total),back:Math.round(r.backTotal),
+      meta:`${r.f.name}・${C.guests}名・${50+C.ext*25}分・${{hon:"本指名",jonai:"場内",help:"ヘルプ"}[C.role]}`};
     try{
-      await sb("annex_tables",{method:"POST",body:JSON.stringify({
-        work_date:date,label,floor:C.floor,guests:C.guests,ext:C.ext,late:C.late,
-        honshimei:C.honshimei,jonai:C.jonai,dohan:C.dohan,role:C.role,bill:C.bill,
-        pay:Math.round(r.total),back:Math.round(r.backTotal),
-        meta:`${r.f.name}・${C.guests}名・${50+C.ext*25}分・${{hon:"本指名",jonai:"場内",help:"ヘルプ"}[C.role]}`})});
-      await loadMonth(date.slice(0,7));
-      $("recLabel").value="";
-      $("recMsg").textContent=`${date} に「${label}」を記録しました`; syncMsg("同期しました");
+      if(EDIT){
+        await sb(`annex_tables?id=eq.${EDIT.id}&cast_id=eq.${CAST.id}`,
+          {method:"PATCH",body:JSON.stringify({...row,updated_at:new Date().toISOString()})});
+        await sb("annex_table_edits",{method:"POST",body:JSON.stringify({
+          table_id:EDIT.id,cast_id:CAST.id,kind:"rebuild",before_json:EDIT.before,
+          after_json:{work_date:date,label,pay:row.pay,back:row.back}})});
+        const id=EDIT.id; EDIT=null; showEditState();
+        await loadMonth(date.slice(0,7));
+        $("recLabel").value="";
+        $("recMsg").textContent=`「${label}」を直しました`; syncMsg("同期しました");
+      }else{
+        await sb("annex_tables",{method:"POST",body:JSON.stringify(row)});
+        await loadMonth(date.slice(0,7));
+        $("recLabel").value="";
+        $("recMsg").textContent=`${date} に「${label}」を記録しました`; syncMsg("同期しました");
+      }
       setTimeout(()=>{$("recMsg").textContent="";},2600);
     }catch(err){$("recMsg").textContent="記録できませんでした： "+err.message;syncMsg("同期エラー",false);
       if(/接続できません/.test(err.message)) offline(true,err.message);}
+    return;
+  }
+  if(t.dataset.ed){ const b=$("ed-"+t.dataset.ed); if(b) b.classList.toggle("hide"); return; }
+  if(t.dataset.edsave){
+    const id=t.dataset.edsave,row=TBLS.find(x=>x.id===id); if(!row) return;
+    const after={work_date:$("edd-"+id).value||row.work_date,
+      label:$("edl-"+id).value.trim()||row.label,
+      pay:Math.round(Number($("edp-"+id).value)||0),
+      back:Math.round(Number($("edb-"+id).value)||0)};
+    const before={work_date:row.work_date,label:row.label,pay:row.pay,back:row.back};
+    if(!Object.keys(after).some(k=>String(after[k])!==String(before[k]))){syncMsg("変わっていません");return;}
+    try{
+      await sb(`annex_tables?id=eq.${id}&cast_id=eq.${CAST.id}`,
+        {method:"PATCH",body:JSON.stringify({...after,updated_at:new Date().toISOString()})});
+      await sb("annex_table_edits",{method:"POST",body:JSON.stringify({
+        table_id:id,cast_id:CAST.id,kind:"amount",before_json:before,after_json:after})});
+      await loadMonth(after.work_date.slice(0,7));
+      syncMsg("直しました");
+    }catch(err){syncMsg("直せませんでした",false);}
+    return;
+  }
+  if(t.dataset.edload){
+    const row=TBLS.find(x=>x.id===t.dataset.edload); if(!row) return;
+    C={floor:row.floor||"main",guests:row.guests||1,ext:row.ext||0,late:!!row.late,
+       honshimei:row.honshimei||0,jonai:row.jonai||0,dohan:row.dohan||0,role:row.role||"hon",
+       bill:Array.isArray(row.bill)?JSON.parse(JSON.stringify(row.bill)):[]};
+    EDIT={id:row.id,before:{work_date:row.work_date,label:row.label,pay:row.pay,back:row.back}};
+    $("recDate").value=row.work_date; $("recLabel").value=row.label;
+    syncCheckForm(); showEditState();
+    document.querySelector('.tab[data-t="check"]').click();
     return;
   }
   if(t.id==="rkAdd"){
@@ -786,7 +793,7 @@ document.addEventListener("click",async e=>{
       try{
         if(date.slice(0,7)!==curMonth) await loadMonth(date.slice(0,7));
         await sb("annex_tables",{method:"POST",body:JSON.stringify({
-          work_date:date,label,pay:0,back:Math.round(back),source:"riko",meta:"自己記録"})});
+          cast_id:CAST.id,work_date:date,label,pay:0,back:Math.round(back),source:"riko",meta:"自己記録"})});
         await loadMonth(date.slice(0,7));
         $("rkMsg").textContent=`${date} に保存しました`; syncMsg("同期しました");
       }catch(err){$("rkMsg").textContent="保存できませんでした";syncMsg("同期エラー",false);}
@@ -802,7 +809,7 @@ document.addEventListener("click",async e=>{
   if(t.dataset.rm){
     if(t.dataset.temp){TEMP=TEMP.filter(x=>x.id!==t.dataset.rm);
       renderMonthBar();renderDays("days","mTitle","sTake","sPay","sCnt",true);return;}
-    try{await sb(`annex_tables?id=eq.${t.dataset.rm}`,{method:"DELETE"});await loadMonth(curMonth);syncMsg("削除しました");}
+    try{await sb(`annex_tables?id=eq.${t.dataset.rm}&cast_id=eq.${CAST.id}`,{method:"DELETE"});await loadMonth(curMonth);syncMsg("削除しました");}
     catch(err){syncMsg("削除に失敗",false);} return;
   }
   if(t.dataset.mv){
@@ -817,17 +824,17 @@ let hrT=null;
 async function saveDay(d){
   const rec=DAYS[d]||{hours:0,okuri:false,inT:"",outT:""};
   try{await sb("annex_days",{method:"POST",prefer:"resolution=merge-duplicates,return=representation",
-    body:JSON.stringify({work_date:d,hours:rec.hours,okuri:rec.okuri,
+    body:JSON.stringify({cast_id:CAST.id,work_date:d,hours:rec.hours,okuri:rec.okuri,
       in_time:rec.inT||null,out_time:rec.outT||null,updated_at:new Date().toISOString()})});
     syncMsg("同期しました");}
   catch(err){syncMsg("同期エラー",false);}
 }
 function refreshDay(d){
   renderMonthBar();
-  const map=dayList(true), r=calcDay(d,map[d]||[]);
+  const map=dayList(true), r=calcDay(map[d]||[],DAYS[d],S);
   const head=document.querySelector(`.dhead[data-day="days-${d}"] .a`);
   if(head) head.textContent="¥"+yen(r.take);
-  const m=calcMonth(true); $("sTake").textContent="¥"+yen(m.take);
+  const m=monthOf(true); $("sTake").textContent="¥"+yen(m.take);
 }
 document.addEventListener("input",e=>{
   if(e.target.dataset.hours){
@@ -870,13 +877,83 @@ CATS.forEach(k=>$("s_bk_"+k).addEventListener("input",e=>{S.bk[k]=Number(e.targe
 $("s_gensen").addEventListener("change",e=>{S.gensen=e.target.checked;saveStatusSoon();renderMonthBar();
   renderDays("days","mTitle","sTake","sPay","sCnt",true);});
 
-(async()=>{
+/* ══════ 源氏名ゲート ══════ */
+let gateCast=null,gateNew=false;
+function gateReset(){
+  gateCast=null; gateNew=false;
+  $("cgName").value=""; $("cgPass").value="";
+  $("cgPass").classList.add("hide"); $("cgBack").classList.add("hide");
+  $("cgPass").placeholder="パスコード";
+  $("cgGo").textContent="開く"; $("cgMsg").textContent="";
+}
+function askPass(c){
+  gateCast=c; gateNew=false;
+  $("cgName").value=c.name;
+  $("cgPass").classList.remove("hide"); $("cgBack").classList.remove("hide");
+  $("cgGo").textContent="開く";
+  $("cgMsg").textContent=`${c.name} のパスコードを入れてください`;
+}
+async function gateGo(){
+  const msg=$("cgMsg");
+  try{
+    if(gateNew){
+      const name=$("cgName").value.trim(), v=$("cgPass").value.trim();
+      const h=v?await sha(v):null;
+      msg.textContent="登録しています…";
+      const c=await createCast(name,h);
+      if(!c){msg.textContent="登録できませんでした";return;}
+      return enterCast(c,h);
+    }
+    if(gateCast){
+      const h=await sha($("cgPass").value);
+      if(h!==gateCast.pass_hash){msg.textContent="パスコードが違います";return;}
+      return enterCast(gateCast,h);
+    }
+    const name=$("cgName").value.trim();
+    if(!name){msg.textContent="源氏名を入れてください";return;}
+    msg.textContent="確認しています…";
+    const c=await findCast(name);
+    if(c) return c.pass_hash?askPass(c):enterCast(c);
+    gateNew=true;
+    $("cgPass").classList.remove("hide"); $("cgBack").classList.remove("hide");
+    $("cgPass").placeholder="パスコード（空欄でも可）";
+    $("cgGo").textContent="この名前で登録して開く";
+    msg.innerHTML=`<b>${esc(name)}</b> はまだ登録されていません。この名前で新しく始めます。<br>`
+      +`他の人に開かれたくなければパスコードを決めてください（あとから変えられます）`;
+  }catch(err){ msg.textContent="つながりませんでした： "+err.message; offline(true,err.message); }
+}
+async function enterCast(c,unlockHash){
+  CAST=c;
+  LS.set("annex:cast",JSON.stringify({id:c.id,name:c.name}));
+  if(unlockHash) LS.set(castKey("unlocked"),unlockHash);
+  $("castGate").classList.add("hide");
+  $("app").classList.remove("hide");
+  $("ledger").classList.remove("hide");
+  $("whoami").textContent=c.name;
+  $("tabMine").textContent=`${c.name}のシート`;
   $("recDate").value=todayStr();
   $("rkDate").value=todayStr();
   await loadStatus();
   await loadMonth(todayStr().slice(0,7));
   render();
   syncMsg("接続しました");
+}
+
+(async()=>{
+  const saved=LS.get("annex:cast");
+  $("castGate").classList.remove("hide");
+  if(saved){
+    try{
+      const c0=JSON.parse(saved), c=await findCast(c0.name);
+      if(c&&c.id===c0.id){
+        if(!c.pass_hash) return enterCast(c);
+        CAST=c; const ok=LS.get(castKey("unlocked"))===c.pass_hash; CAST=null;
+        if(ok) return enterCast(c);
+        return askPass(c);
+      }
+    }catch(e){ $("cgMsg").textContent="つながりませんでした。通信を確認してください"; }
+  }
+  gateReset();
 })();
 </script>
 </body>
